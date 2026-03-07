@@ -336,3 +336,210 @@ type Stringified<T> = {
 ```
 
 ---
+
+## 11. Что такое тип never и где он применяется?
+
+**`never`** — тип, представляющий невозможное значение. Функция с возвратом `never` никогда не завершается нормально (бросает исключение или зависает).
+
+```ts
+// Функция, которая всегда бросает ошибку
+function fail(message: string): never {
+  throw new Error(message);
+}
+
+// Бесконечный цикл
+function loop(): never {
+  while (true) {}
+}
+```
+
+**`never` как нижний тип** — подтип любого типа, но ни один тип не является подтипом `never`:
+
+```ts
+// never в union исчезает
+type A = string | never; // string
+
+// never в intersection захватывает всё
+type B = string & never; // never
+```
+
+**Exhaustiveness check с `never`** — главное практическое применение:
+
+```ts
+type Shape = 'circle' | 'rect' | 'triangle';
+
+function getArea(shape: Shape): number {
+  switch (shape) {
+    case 'circle':  return 1;
+    case 'rect':    return 2;
+    case 'triangle': return 3;
+    default:
+      // Если добавить новый Shape и забыть обработать —
+      // TypeScript покажет ошибку здесь
+      const _check: never = shape;
+      throw new Error(`Unknown: ${shape}`);
+  }
+}
+```
+
+**`never` в условных типах:**
+
+```ts
+// Фильтрация типов из union
+type NonNullable<T> = T extends null | undefined ? never : T;
+type OnlyStrings<T> = T extends string ? T : never;
+
+type Result = OnlyStrings<string | number | boolean>; // string
+```
+
+---
+
+## 12. Что такое Constraints (ограничения дженериков)?
+
+**Constraints** — ограничения на тип-параметр через `extends`. Позволяют обращаться к свойствам дженерика, которые гарантированно существуют.
+
+```ts
+// Без ограничения — TypeScript не знает, есть ли .length
+function getLength<T>(value: T): number {
+  return value.length; // Error: Property 'length' does not exist on type 'T'
+}
+
+// С ограничением — гарантируем наличие length
+function getLength<T extends { length: number }>(value: T): number {
+  return value.length; // OK
+}
+
+getLength('hello');  // OK — string имеет length
+getLength([1, 2, 3]); // OK — array имеет length
+getLength(42);        // Error — number не имеет length
+```
+
+**Ограничение через interface:**
+
+```ts
+interface HasId { id: number; }
+
+function findById<T extends HasId>(items: T[], id: number): T | undefined {
+  return items.find(item => item.id === id);
+}
+
+// Работает для любого объекта с полем id
+findById([{ id: 1, name: 'Alice' }], 1); // { id: 1, name: 'Alice' }
+```
+
+**`keyof` как ограничение — типобезопасный доступ к полям:**
+
+```ts
+function getField<T, K extends keyof T>(obj: T, key: K): T[K] {
+  return obj[key];
+}
+
+const user = { id: 1, name: 'Alex', age: 30 };
+getField(user, 'name'); // string ✅
+getField(user, 'xyz');  // Error: Argument of type '"xyz"' is not assignable ✅
+```
+
+**Ограничение через union:**
+
+```ts
+function format<T extends string | number>(value: T): string {
+  return String(value);
+}
+```
+
+**Множественные ограничения** — через пересечение `&`:
+
+```ts
+function merge<T extends object, U extends object>(a: T, b: U): T & U {
+  return { ...a, ...b };
+}
+```
+
+---
+
+## 13. Антипатерны в TypeScript
+
+**1. Злоупотребление `any`** — отключает проверку типов полностью:
+
+```ts
+// Плохо
+function process(data: any) {
+  data.nonexistent.method(); // нет ошибки — упадёт в runtime
+}
+
+// Хорошо — unknown с явным сужением
+function process(data: unknown) {
+  if (typeof data === 'object' && data !== null && 'name' in data) {
+    console.log((data as { name: string }).name);
+  }
+}
+```
+
+**2. Небезопасные type assertions (`as`)** — обход системы типов без проверки:
+
+```ts
+// Плохо — принудительное приведение без гарантий
+const user = JSON.parse(response) as User; // может быть чем угодно
+
+// Хорошо — валидация через type guard или библиотеку (zod, io-ts)
+import { z } from 'zod';
+const UserSchema = z.object({ id: z.number(), name: z.string() });
+const user = UserSchema.parse(JSON.parse(response)); // throws если невалидно
+```
+
+**3. `@ts-ignore` и `@ts-expect-error` без комментария:**
+
+```ts
+// Плохо — скрывает проблему
+// @ts-ignore
+someFunction(wrongType);
+
+// Лучше — исправить тип или явно объяснить причину
+// @ts-expect-error: библиотека не экспортирует правильный тип, см. issue #123
+someFunction(wrongType);
+```
+
+**4. Избыточные аннотации (вместо вывода типов):**
+
+```ts
+// Плохо — TypeScript сам выводит тип
+const name: string = 'Alex';
+const users: Array<User> = getUsers();
+
+// Хорошо — аннотируйте только там, где вывод невозможен
+const name = 'Alex';              // тип: 'Alex' (literal)
+const users = getUsers();         // тип выводится из сигнатуры функции
+function greet(name: string): string { return `Hello, ${name}`; } // нужно
+```
+
+**5. Размытые типы возвратов:**
+
+```ts
+// Плохо — теряем точность
+function getConfig(): object { return { host: 'localhost', port: 3000 }; }
+
+// Хорошо — явный тип или вывод TypeScript
+function getConfig() { return { host: 'localhost', port: 3000 }; }
+// тип: { host: string; port: number }
+
+// Ещё лучше для константных значений
+function getConfig() {
+  return { host: 'localhost', port: 3000 } as const;
+}
+// тип: { readonly host: 'localhost'; readonly port: 3000 }
+```
+
+**6. Дублирование типов вместо переиспользования:**
+
+```ts
+// Плохо
+type CreateUserDto = { name: string; email: string; age: number };
+type UpdateUserDto = { name: string; email: string; age: number };
+
+// Хорошо — Partial от базового типа
+type User = { name: string; email: string; age: number };
+type CreateUserDto = Omit<User, 'id'>;
+type UpdateUserDto = Partial<CreateUserDto>;
+```
+
+---

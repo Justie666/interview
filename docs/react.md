@@ -471,3 +471,457 @@ const { data: user, loading } = useFetch('/api/user');
 **Правила:** имя начинается с `use`, соблюдает правила хуков, не возвращает JSX.
 
 ---
+
+## 17. Что такое React.memo и когда его использовать?
+
+**`React.memo`** — HOC (компонент высшего порядка), который мемоизирует компонент: пропускает повторный рендер, если пропсы не изменились (поверхностное сравнение).
+
+```jsx
+// Без memo — перерендеривается каждый раз при рендере Parent
+function Child({ name }) {
+  console.log('render Child');
+  return <div>{name}</div>;
+}
+
+// С memo — рендерится только при изменении name
+const Child = React.memo(function Child({ name }) {
+  console.log('render Child');
+  return <div>{name}</div>;
+});
+
+function Parent() {
+  const [count, setCount] = useState(0);
+  return (
+    <>
+      <button onClick={() => setCount(c => c + 1)}>{count}</button>
+      <Child name="Alex" /> {/* не перерендерится при клике */}
+    </>
+  );
+}
+```
+
+**Кастомная функция сравнения:**
+
+```jsx
+const Child = React.memo(
+  ({ user }) => <div>{user.name}</div>,
+  (prevProps, nextProps) => prevProps.user.id === nextProps.user.id
+  // true — пропустить рендер, false — рендерить
+);
+```
+
+**Когда использовать:** компонент рендерится часто, получает стабильные пропсы, рендеринг дорогостоящий. В связке с `useCallback` для стабилизации функций-пропсов.
+
+**Когда не использовать:** простые компоненты (проверка дороже рендера), пропсы меняются при каждом рендере, компонент и так рендерится редко.
+
+---
+
+## 18. Что такое Virtual DOM и как он работает?
+
+**Virtual DOM** — лёгкое JavaScript-представление реального DOM в виде дерева объектов. React работает с ним вместо прямого манипулирования DOM.
+
+**Процесс обновления:**
+
+```
+1. Состояние изменилось (setState)
+         ↓
+2. React создаёт новый Virtual DOM
+         ↓
+3. Diffing: сравнивает новый VDOM со старым (O(n) алгоритм)
+         ↓
+4. Reconciliation: вычисляет минимальный набор изменений
+         ↓
+5. Commit: применяет изменения к реальному DOM
+```
+
+```jsx
+// JSX компилируется в React.createElement — это и есть VDOM-нода
+const element = <div className="box">Hello</div>;
+// Превращается в:
+const element = React.createElement('div', { className: 'box' }, 'Hello');
+// Что создаёт объект:
+// { type: 'div', props: { className: 'box', children: 'Hello' } }
+```
+
+**Почему это быстро:**
+- Операции с JS-объектами быстрее DOM-операций
+- Пакетирование обновлений (batching) — несколько `setState` → один рендер
+- Минимальные изменения DOM вместо перерисовки всего
+
+**React Fiber** (React 16+) — перезаписанный алгоритм: может прерывать работу, расставлять приоритеты, поддерживает Concurrent Mode.
+
+---
+
+## 19. Что такое Redux и как он устроен?
+
+**Redux** — библиотека управления глобальным состоянием. Основана на паттерне Flux: однонаправленный поток данных.
+
+**Три принципа:**
+1. **Single source of truth** — весь стейт в одном Store
+2. **State is read-only** — изменить стейт можно только через Action
+3. **Changes via pure functions** — Reducer — чистая функция `(state, action) => newState`
+
+```js
+// Action — описание события
+const increment = () => ({ type: 'counter/increment' });
+const addTodo = (text) => ({ type: 'todos/add', payload: text });
+
+// Reducer — чистая функция, вычисляет новое состояние
+function counterReducer(state = 0, action) {
+  switch (action.type) {
+    case 'counter/increment': return state + 1;
+    case 'counter/decrement': return state - 1;
+    default: return state;
+  }
+}
+
+// Store
+const store = createStore(counterReducer);
+store.dispatch(increment());
+store.getState(); // 1
+```
+
+**Redux Toolkit (RTK)** — современный способ, устраняет boilerplate:
+
+```js
+import { createSlice, configureStore } from '@reduxjs/toolkit';
+
+const counterSlice = createSlice({
+  name: 'counter',
+  initialState: { value: 0 },
+  reducers: {
+    increment: state => { state.value += 1; }, // RTK использует Immer — мутации OK
+    decrement: state => { state.value -= 1; },
+  },
+});
+
+export const { increment, decrement } = counterSlice.actions;
+
+// В компоненте:
+const count = useSelector(state => state.counter.value);
+const dispatch = useDispatch();
+dispatch(increment());
+```
+
+**Поток данных:** `UI → dispatch(action) → reducer → новый store → UI обновился`
+
+**Когда Redux не нужен:** небольшое приложение, локальное состояние, достаточно Context API + `useReducer`.
+
+---
+
+## 20. Что такое React Fiber?
+
+**React Fiber** — переписанный алгоритм reconciliation, введённый в React 16. Разбивает рендеринг на небольшие единицы работы («волокна»), которые можно **прерывать, откладывать и приоритизировать**.
+
+**Проблема до Fiber:** старый Stack Reconciler был полностью синхронным — долгий рендер блокировал главный поток и вызывал «подвисание» UI.
+
+**Что даёт Fiber:**
+- **Concurrent Mode** — рендер прерывается, пропускает неважные задачи
+- **Приоритеты задач** — пользовательский ввод важнее фоновых обновлений
+- **`Suspense`** — умеет «приостанавливать» рендер в ожидании данных
+- **`useTransition`** — помечать обновления как «не срочные»
+
+```jsx
+const [isPending, startTransition] = useTransition();
+
+startTransition(() => {
+  setFilteredList(heavyFilter(items)); // Fiber откладывает — не блокирует ввод
+});
+
+return isPending ? <Spinner /> : <List items={filteredList} />;
+```
+
+**Две фазы рендеринга:**
+1. **Render phase** (прерываемая) — строит Fiber-дерево, вычисляет изменения
+2. **Commit phase** (непрерываемая) — применяет изменения к реальному DOM
+
+---
+
+## 21. Что такое Batching в React?
+
+**Batching** — объединение нескольких `setState` в один рендер для оптимизации.
+
+```jsx
+// React 17 — батчинг только внутри React-обработчиков событий
+function handleClick() {
+  setCount(c => c + 1); // не рендерит
+  setFlag(f => !f);     // не рендерит
+  // → один рендер в конце
+}
+
+// React 17 — НЕ батчилось в setTimeout / промисах
+setTimeout(() => {
+  setCount(c => c + 1); // рендер!
+  setFlag(f => !f);     // ещё рендер!
+}, 0);
+```
+
+**React 18 — Automatic Batching:** батчинг работает везде автоматически:
+
+```jsx
+// React 18 — один рендер в конце, даже в setTimeout и fetch
+setTimeout(() => {
+  setCount(c => c + 1);
+  setFlag(f => !f);
+  // → один рендер
+}, 0);
+
+fetch('/api').then(() => {
+  setData(d);
+  setLoading(false);
+  // → один рендер
+});
+```
+
+Отключить батчинг при необходимости можно через `flushSync`.
+
+---
+
+## 22. Как работает реактивность в React?
+
+React использует **явную реактивность** — в отличие от Vue и MobX, он не отслеживает зависимости автоматически. Перерендер происходит только тогда, когда разработчик явно вызывает `setState` / `dispatch`.
+
+**Механизм:**
+
+```
+setState вызван
+    ↓
+React ставит компонент в очередь на перерендер
+    ↓
+Вся функция-компонент запускается заново (render phase)
+    ↓
+React сравнивает новый и старый VDOM (diffing)
+    ↓
+Применяет минимальные изменения к DOM (commit phase)
+```
+
+```jsx
+// React НЕ знает о мутации — перерендера не будет!
+const [user, setUser] = useState({ name: 'Alex' });
+user.name = 'Bob'; // ❌ мутация — React не заметит
+
+// Правильно — новый объект → React видит изменение
+setUser({ ...user, name: 'Bob' }); // ✅
+```
+
+**Оптимизации реактивности:**
+- `React.memo` — пропускает рендер, если пропсы не изменились
+- `useMemo` / `useCallback` — стабилизируют значения между рендерами
+- `useTransition` / `useDeferredValue` — понижают приоритет обновлений
+
+---
+
+## 23. Что такое flushSync?
+
+**`flushSync`** — функция из `react-dom`, которая форсирует **синхронный рендер немедленно**, обходя батчинг.
+
+```jsx
+import { flushSync } from 'react-dom';
+
+function handleClick() {
+  flushSync(() => {
+    setCount(c => c + 1); // DOM обновится СРАЗУ
+  });
+  // Здесь DOM уже актуален:
+  console.log(ref.current.textContent); // свежее значение
+
+  flushSync(() => {
+    setFlag(f => !f); // ещё один синхронный рендер
+  });
+}
+```
+
+**Когда нужен:**
+- Нужно прочитать обновлённый DOM сразу после `setState` (размеры, позиции)
+- Интеграция с третьесторонними библиотеками, ожидающими синхронного DOM
+- Анимации, где важен точный момент обновления
+
+**Предупреждение:** снижает производительность — React не может батчить такие обновления. Используйте только когда реально необходимо.
+
+---
+
+## 24. Что такое Stale Closure в useEffect?
+
+**Stale Closure** («устаревшее замыкание») — баг, когда коллбэк в `useEffect` захватывает **устаревшее значение** переменной из момента создания функции.
+
+```jsx
+// Баг: stale closure
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      console.log(count);   // ВСЕГДА 0 — захватил значение при монтировании
+      setCount(count + 1);  // ВСЕГДА устанавливает 1
+    }, 1000);
+    return () => clearInterval(id);
+  }, []); // [] — эффект не перезапускается, замыкание «протухает»
+}
+```
+
+**Три решения:**
+
+```jsx
+// 1. Добавить count в зависимости — эффект будет перезапускаться
+useEffect(() => {
+  const id = setInterval(() => setCount(count + 1), 1000);
+  return () => clearInterval(id);
+}, [count]);
+
+// 2. Функциональное обновление — не зависит от замкнутого значения ✅
+useEffect(() => {
+  const id = setInterval(() => setCount(c => c + 1), 1000);
+  return () => clearInterval(id);
+}, []);
+
+// 3. useRef — мутабельное значение, всегда актуальное
+const countRef = useRef(count);
+useEffect(() => { countRef.current = count; });
+useEffect(() => {
+  const id = setInterval(() => setCount(countRef.current + 1), 1000);
+  return () => clearInterval(id);
+}, []);
+```
+
+**Правило:** если ESLint (`react-hooks/exhaustive-deps`) просит добавить переменную в зависимости — не игнорируйте. Это защита от stale closures.
+
+---
+
+## 25. Почему setState в React — асинхронный?
+
+`setState` не обновляет состояние мгновенно — React **планирует** обновление и применяет его в следующем рендере.
+
+```jsx
+function handleClick() {
+  setCount(count + 1);
+  console.log(count); // 0 — значение не изменилось!
+  setCount(count + 1); // тоже +1, не +2 (count всё ещё 0)
+  // Итог: count стал 1, а не 2
+}
+```
+
+**Почему:** React батчит несколько `setState` в один рендер. Если бы `setState` был синхронным — каждый вызов вызывал бы немедленный рендер, что катастрофично для производительности.
+
+**Решение — функциональное обновление** (получает актуальный state, а не замкнутый):
+
+```jsx
+setCount(c => c + 1); // c — гарантированно актуальный
+setCount(c => c + 1); // c — уже +1 от предыдущей очереди
+// Итог: count стал 2 ✅
+```
+
+**Прочитать актуальный state сразу** после `setState` — невозможно через переменную. Используйте `useRef` для синхронного доступа или `flushSync` для форсированного рендера.
+
+---
+
+## 26. Что такое useReducer и когда его использовать?
+
+**`useReducer`** — хук для управления состоянием через функцию-редьюсер. Альтернатива `useState` для сложного или взаимосвязанного состояния.
+
+```jsx
+const initialState = { count: 0, step: 1 };
+
+function reducer(state, action) {
+  switch (action.type) {
+    case 'increment': return { ...state, count: state.count + state.step };
+    case 'decrement': return { ...state, count: state.count - state.step };
+    case 'setStep':   return { ...state, step: action.payload };
+    case 'reset':     return initialState;
+    default: throw new Error(`Unknown action: ${action.type}`);
+  }
+}
+
+function Counter() {
+  const [state, dispatch] = useReducer(reducer, initialState);
+  return (
+    <>
+      <p>Count: {state.count}, Step: {state.step}</p>
+      <button onClick={() => dispatch({ type: 'increment' })}>+</button>
+      <button onClick={() => dispatch({ type: 'setStep', payload: 5 })}>Step=5</button>
+    </>
+  );
+}
+```
+
+**Когда использовать `useReducer` вместо `useState`:**
+- Несколько взаимосвязанных полей состояния
+- Следующее состояние зависит от предыдущего
+- Сложная логика обновлений с условиями
+- Хотите тестировать логику отдельно от компонента (reducer — чистая функция)
+
+| | `useState` | `useReducer` |
+| --- | --- | --- |
+| Сложность состояния | Простое | Сложное / взаимосвязанное |
+| Тестируемость | Средняя | Высокая |
+| Читаемость при росте | Ухудшается | Централизованная логика |
+
+---
+
+## 27. Что такое MobX и как он работает?
+
+**MobX** — библиотека **реактивного** управления состоянием. Автоматически отслеживает, какие данные используют компоненты, и перерисовывает их при изменении.
+
+**Ключевые концепции:** Observable (данные) → Action (изменение) → Computed (производные) → Reaction (сайд-эффект, рендер).
+
+```js
+import { makeAutoObservable } from 'mobx';
+import { observer } from 'mobx-react-lite';
+
+class CounterStore {
+  count = 0;
+
+  constructor() {
+    makeAutoObservable(this); // автоматически делает всё observable
+  }
+
+  increment() { this.count++; }              // action
+  get doubled() { return this.count * 2; }  // computed
+}
+
+const store = new CounterStore();
+
+// observer — подписывает компонент на используемые observable
+const Counter = observer(() => (
+  <div>
+    <p>{store.count} (x2: {store.doubled})</p>
+    <button onClick={() => store.increment()}>+</button>
+  </div>
+));
+```
+
+**Отличие от Redux:** MobX мутирует состояние напрямую (через прокси), Redux требует иммутабельности. MobX — меньше boilerplate, Redux — строже и предсказуемее.
+
+---
+
+## 28. В чём разница Redux, Zustand и MobX?
+
+| | Redux (RTK) | Zustand | MobX |
+| --- | --- | --- | --- |
+| Парадигма | Flux, иммутабельность | Простой стор | Реактивность, мутации |
+| Boilerplate | Средний | Минимальный | Минимальный |
+| Размер | ~40 КБ | ~1 КБ | ~16 КБ |
+| DevTools | Отличные (time travel) | Хорошие | Хорошие |
+| Порог входа | Высокий | Низкий | Средний |
+| Когда выбирать | Большие команды, строгая структура | Большинство SPA | OOP-стиль, сложные вычисления |
+
+```js
+// Zustand — минимальный boilerplate
+import { create } from 'zustand';
+
+const useStore = create(set => ({
+  count: 0,
+  increment: () => set(state => ({ count: state.count + 1 })),
+}));
+
+function Counter() {
+  const { count, increment } = useStore();
+  return <button onClick={increment}>{count}</button>;
+}
+```
+
+**Рекомендация:**
+- **Zustand** — выбор по умолчанию для большинства React-приложений: просто, быстро, без лишнего кода
+- **Redux RTK** — при необходимости строгой структуры, мощных DevTools, большой команды
+- **MobX** — при OOP-подходе или сложных вычислительных графах
+
+---

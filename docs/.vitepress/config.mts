@@ -11,6 +11,7 @@ export default defineConfig({
       { text: 'React', link: '/react' },
       { text: 'TypeScript', link: '/typescript' },
       { text: 'Browser', link: '/browser' },
+      { text: 'CSS', link: '/css' },
     ],
 
     sidebar: [
@@ -21,6 +22,7 @@ export default defineConfig({
           { text: 'React', link: '/react' },
           { text: 'TypeScript', link: '/typescript' },
           { text: 'Browser & Network', link: '/browser' },
+          { text: 'CSS', link: '/css' },
         ]
       }
     ],

@@ -482,3 +482,322 @@ const range = {
 **Применение генераторов:** ленивые последовательности, пагинация, конечные автоматы, управление async-потоком (Redux Saga).
 
 ---
+
+## 17. Сколько типов данных в JavaScript и какие они?
+
+В JavaScript **8 типов данных**: 7 примитивных + 1 ссылочный.
+
+**Примитивы** (хранятся по значению, иммутабельны):
+
+| Тип | Пример | Особенность |
+| --- | --- | --- |
+| `string` | `'hello'` | UTF-16 |
+| `number` | `42`, `NaN`, `Infinity` | 64-bit float |
+| `bigint` | `9007199254740991n` | Целые без ограничений |
+| `boolean` | `true`, `false` | |
+| `undefined` | `let x;` | Нет значения |
+| `null` | `null` | Отсутствие объекта (typeof → 'object', это баг JS) |
+| `symbol` | `Symbol('id')` | Уникальный идентификатор |
+
+**Ссылочный тип** (хранятся по ссылке, мутабельны):
+- `object` — объекты, массивы, функции, Map, Set, Date...
+
+```js
+// Примитивы сравниваются по значению
+'hello' === 'hello' // true
+
+// Объекты сравниваются по ссылке
+{} === {}   // false
+[] === []   // false
+
+const a = { x: 1 };
+const b = a;
+b.x = 99;
+console.log(a.x); // 99 — одна и та же ссылка
+```
+
+**`typeof` в JavaScript:**
+```js
+typeof 42         // 'number'
+typeof 'str'      // 'string'
+typeof true       // 'boolean'
+typeof undefined  // 'undefined'
+typeof null       // 'object' ← исторический баг
+typeof {}         // 'object'
+typeof []         // 'object'
+typeof function(){} // 'function'
+typeof Symbol()   // 'symbol'
+```
+
+---
+
+## 18. В чём разница поверхностного и глубокого копирования объектов?
+
+**Поверхностное копирование (shallow copy)** — копирует только первый уровень. Вложенные объекты остаются как ссылки.
+
+```js
+const original = { a: 1, nested: { b: 2 } };
+
+// Способы shallow copy:
+const copy1 = { ...original };
+const copy2 = Object.assign({}, original);
+
+copy1.a = 99;          // не влияет на original
+copy1.nested.b = 99;   // ВЛИЯЕТ — nested — одна ссылка!
+console.log(original.nested.b); // 99
+```
+
+**Глубокое копирование (deep copy)** — рекурсивно копирует все уровни.
+
+```js
+// 1. structuredClone — современный стандарт (доступен с Node 17+, браузеры 2022+)
+const deep1 = structuredClone(original);
+deep1.nested.b = 999;
+console.log(original.nested.b); // 2 — оригинал не изменился
+
+// 2. JSON (работает только для JSON-совместимых данных)
+const deep2 = JSON.parse(JSON.stringify(original));
+// Не работает с: функциями, undefined, Date, Map, Set, циклическими ссылками
+
+// 3. Библиотека lodash
+import cloneDeep from 'lodash/cloneDeep';
+const deep3 = cloneDeep(original);
+```
+
+| Метод | Скорость | Поддержка типов |
+| --- | --- | --- |
+| `structuredClone` | Хорошая | Date, Map, Set, ArrayBuffer, циклические ссылки |
+| `JSON.parse/stringify` | Быстрая | Только JSON-типы |
+| `lodash.cloneDeep` | Средняя | Почти всё |
+
+---
+
+## 19. Что такое область видимости (scope) и замыкание в JavaScript?
+
+**Область видимости (scope)** — контекст, в котором доступны переменные. В JS область видимости лексическая — определяется в момент написания кода.
+
+**Виды областей видимости:**
+
+```js
+// Глобальная — доступна везде
+var globalVar = 'global';
+
+function outer() {
+  // Функциональная — доступна внутри функции
+  let outerVar = 'outer';
+
+  if (true) {
+    // Блочная — доступна только в блоке {} (let/const)
+    let blockVar = 'block';
+    var funcVar = 'func'; // var игнорирует блок, поднимается до функции
+  }
+
+  console.log(funcVar);  // 'func' — var доступен
+  // console.log(blockVar); // ReferenceError
+}
+```
+
+**Hoisting (поднятие)** — переменные и функции поднимаются к началу своей области видимости:
+
+```js
+console.log(x); // undefined (var поднят, но без значения)
+var x = 5;
+
+console.log(y); // ReferenceError: TDZ (Temporal Dead Zone)
+let y = 5;
+
+greet(); // OK — function declaration поднимается целиком
+function greet() { return 'hello'; }
+```
+
+**Scope chain** — при обращении к переменной JS ищет сначала в текущем scope, затем во внешних, вплоть до глобального.
+
+---
+
+## 20. В чём разница call, apply и bind?
+
+Все три явно задают `this` для функции. Разница — в способе передачи аргументов и когда выполняется функция.
+
+```js
+function greet(greeting, punctuation) {
+  return `${greeting}, ${this.name}${punctuation}`;
+}
+
+const user = { name: 'Alex' };
+
+// call — вызывает функцию немедленно, аргументы через запятую
+greet.call(user, 'Привет', '!');   // 'Привет, Alex!'
+
+// apply — вызывает функцию немедленно, аргументы массивом
+greet.apply(user, ['Привет', '!']); // 'Привет, Alex!'
+
+// bind — возвращает новую функцию с привязанным this (не вызывает)
+const boundGreet = greet.bind(user, 'Привет');
+boundGreet('!');   // 'Привет, Alex!'
+boundGreet('...');  // 'Привет, Alex...'
+```
+
+| | `call` | `apply` | `bind` |
+| --- | --- | --- | --- |
+| Вызов | Немедленный | Немедленный | Возвращает функцию |
+| Аргументы | Через запятую | Массивом | Частично применённые |
+
+**Частичное применение через bind:**
+
+```js
+function multiply(a, b) { return a * b; }
+const double = multiply.bind(null, 2); // a = 2 зафиксирован
+double(5);  // 10
+double(10); // 20
+```
+
+---
+
+## 21. Что такое рекурсия?
+
+**Рекурсия** — вызов функции самой себой. Требует **базового случая** (условие выхода), иначе бесконечный стек → `RangeError: Maximum call stack size exceeded`.
+
+```js
+function factorial(n) {
+  if (n <= 1) return 1;          // базовый случай
+  return n * factorial(n - 1);   // рекурсивный вызов
+}
+factorial(5); // 120
+
+// Обход дерева — классическое применение
+function walkTree(node) {
+  console.log(node.value);
+  for (const child of node.children) {
+    walkTree(child);
+  }
+}
+```
+
+**Мемоизация** устраняет повторные вычисления (Фибоначчи без неё — O(2ⁿ)):
+
+```js
+function fib(n, memo = {}) {
+  if (n in memo) return memo[n];
+  if (n <= 1) return n;
+  return (memo[n] = fib(n - 1, memo) + fib(n - 2, memo));
+}
+```
+
+**Применение:** обход деревьев (DOM, AST, файловая система), сортировка (quicksort, mergesort), разбор вложенных структур, динамическое программирование.
+
+**Глубокая рекурсия:** при большой глубине переписывайте на итерацию с явным стеком — не ограничена размером Call Stack.
+
+---
+
+## 22. Можно ли изменить this в стрелочной функции?
+
+**Нет.** `this` стрелочной функции берётся из лексического окружения в момент определения и **не может быть изменён** никаким способом.
+
+```js
+const arrow = () => console.log(this);
+
+// Все попытки изменить this — игнорируются:
+arrow.call({ x: 1 });    // window / undefined (strict mode)
+arrow.apply({ x: 1 });   // то же самое
+arrow.bind({ x: 1 })();  // то же самое
+new arrow();              // TypeError: arrow is not a constructor
+```
+
+**Практическая проблема:**
+
+```js
+const obj = {
+  name: 'Alex',
+  // Стрелочная функция берёт this из момента объявления объекта — это глобальный контекст
+  greet: () => `Привет, ${this.name}`, // undefined!
+  // Обычный метод — this определяется при вызове
+  greetOk() { return `Привет, ${this.name}`; }, // 'Alex'
+};
+```
+
+**Вывод:** если нужна возможность привязки `this` — используйте обычную функцию. Стрелочная — для колбэков, где нужно сохранить контекст внешнего кода.
+
+---
+
+## 23. Что такое принципы ООП?
+
+**Объектно-ориентированное программирование** строится на четырёх принципах:
+
+**1. Инкапсуляция** — скрытие внутреннего состояния, доступ только через публичный интерфейс:
+
+```js
+class BankAccount {
+  #balance = 0; // приватное поле (ES2022)
+
+  deposit(amount) { this.#balance += amount; }
+  getBalance() { return this.#balance; }
+}
+// account.#balance — SyntaxError снаружи класса
+```
+
+**2. Наследование** — потомок получает свойства и методы родителя:
+
+```js
+class Animal { speak() { return 'звук'; } }
+class Dog extends Animal {
+  speak() { return `${super.speak()} — гав`; }
+}
+new Dog().speak(); // 'звук — гав'
+```
+
+**3. Полиморфизм** — один интерфейс, разное поведение в зависимости от типа:
+
+```js
+const animals = [new Dog(), new Cat(), new Bird()];
+animals.forEach(a => console.log(a.speak())); // каждый — по-своему
+```
+
+**4. Абстракция** — скрытие сложности за простым интерфейсом:
+
+```js
+class HttpClient {
+  get(url) { /* retry, timeout, headers, parsing — скрыто */ }
+}
+client.get('/api/user'); // пользователь не знает деталей
+```
+
+---
+
+## 24. Что такое SOLID?
+
+**SOLID** — пять принципов проектирования, делающих код гибким и сопровождаемым:
+
+| Буква | Принцип | Суть |
+| --- | --- | --- |
+| **S** | Single Responsibility | Один класс/модуль — одна зона ответственности |
+| **O** | Open/Closed | Открыт для расширения, закрыт для изменения |
+| **L** | Liskov Substitution | Потомок взаимозаменяем с родителем |
+| **I** | Interface Segregation | Много узких интерфейсов лучше одного широкого |
+| **D** | Dependency Inversion | Зависеть от абстракций, а не от конкретных реализаций |
+
+```js
+// S — плохо: UserService делает всё
+class UserService {
+  getUser() {}
+  sendEmail() {}   // чужая ответственность
+  saveToFile() {}  // чужая ответственность
+}
+// S — хорошо: разделение
+class UserService { getUser() {} }
+class EmailService { sendEmail() {} }
+
+// O — расширяем без изменения существующего кода
+class Logger { log(msg) { console.log(msg); } }
+class FileLogger extends Logger {
+  log(msg) { super.log(msg); fs.appendFile('log.txt', msg); }
+}
+
+// D — зависим от интерфейса (notifier), а не от реализации
+class OrderService {
+  constructor(notifier) { this.notifier = notifier; }
+  placeOrder() { this.notifier.send('Заказ оформлен'); }
+}
+// Можно передать EmailNotifier, SMSNotifier, SlackNotifier — без изменения OrderService
+```
+
+---
