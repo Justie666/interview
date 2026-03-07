@@ -258,3 +258,216 @@ const handleSubmit = useCallback((data) => {
 Используйте `useMemo` для тяжёлых вычислений и объектов/массивов передаваемых в `memo`-компоненты. `useCallback` — для функций-пропсов `memo`-компонентов и зависимостей `useEffect`. Не злоупотребляйте — мемоизация сама имеет стоимость.
 
 ---
+
+## 11. Что такое Context API и когда его использовать?
+
+**Context API** — механизм передачи данных вниз по дереву компонентов без prop drilling.
+
+```jsx
+const ThemeContext = createContext('light');
+
+function App() {
+  const [theme, setTheme] = useState('dark');
+  return (
+    <ThemeContext.Provider value={{ theme, setTheme }}>
+      <Layout />
+    </ThemeContext.Provider>
+  );
+}
+
+function Button() {
+  const { theme } = useContext(ThemeContext); // читаем из любого места дерева
+  return <button className={theme}>Click</button>;
+}
+```
+
+**Когда использовать:** глобальные данные (тема, язык, текущий пользователь, auth-токен).
+
+**Когда не использовать:** часто меняющиеся данные (каждое изменение контекста перерендерит всех потребителей). Для высокочастотных обновлений — Zustand, Redux или разбиение на несколько контекстов.
+
+**Оптимизация:** разделяйте контекст на «состояние» и «действия» — подписчики экшенов не будут рендериться при изменении данных.
+
+---
+
+## 12. Как работает алгоритм Reconciliation (согласования)?
+
+**Reconciliation** — процесс, при котором React сравнивает новый Virtual DOM со старым и минимально обновляет реальный DOM.
+
+**Алгоритм (Diffing):**
+1. Если типы элементов разные (`div` → `span`) — дерево пересоздаётся полностью
+2. Если типы одинаковые — обновляются только изменившиеся атрибуты/пропсы
+3. Для списков — используется `key` для сопоставления элементов
+
+```jsx
+// React видит одинаковый тип — только обновит className
+// Было: <div className="old" />
+// Стало: <div className="new" />
+
+// Тип изменился — полное пересоздание (состояние сброшено)
+// Было: <Counter />
+// Стало: <input />
+```
+
+**React Fiber** (с React 16) — перезаписанный движок reconciliation. Позволяет прерывать рендеринг (Concurrent Mode), расставлять приоритеты задач, реализует `Suspense`, `useTransition`.
+
+---
+
+## 13. Что такое Error Boundaries?
+
+**Error Boundary** — компонент-класс, перехватывающий ошибки JavaScript в дереве дочерних компонентов и показывающий fallback UI вместо краша.
+
+```jsx
+class ErrorBoundary extends React.Component {
+  state = { hasError: false };
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, info) {
+    logErrorToService(error, info.componentStack);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <h2>Что-то пошло не так.</h2>;
+    }
+    return this.props.children;
+  }
+}
+
+// Использование:
+<ErrorBoundary>
+  <FeatureComponent />
+</ErrorBoundary>
+```
+
+**Важно:** Error Boundaries не ловят ошибки в:
+- обработчиках событий (используйте `try/catch`)
+- асинхронном коде (`setTimeout`, промисах)
+- серверном рендеринге
+- самом Error Boundary
+
+В React 19 появится хук `use(ErrorBoundary)` как альтернатива.
+
+---
+
+## 14. Как работают React.lazy и Suspense?
+
+**React.lazy** + **Suspense** — механизм code splitting на уровне компонентов. Компонент загружается только когда он нужен (lazy loading).
+
+```jsx
+import { lazy, Suspense } from 'react';
+
+// Компонент загружается только при первом рендере
+const HeavyChart = lazy(() => import('./HeavyChart'));
+
+function Dashboard() {
+  return (
+    <Suspense fallback={<Spinner />}>
+      <HeavyChart data={data} />
+    </Suspense>
+  );
+}
+```
+
+**Как работает:**
+1. `lazy()` возвращает специальный компонент, который при рендере «бросает» Promise
+2. Ближайший `<Suspense>` перехватывает этот Promise и показывает `fallback`
+3. Когда Promise резолвится (чанк загружен) — рендерится настоящий компонент
+
+**Suspense для данных (React 18+):** работает с библиотеками (React Query, SWR, Relay) через те же механизмы.
+
+```jsx
+// Роутинг с lazy loading — стандартный паттерн
+const routes = [
+  { path: '/profile', component: lazy(() => import('./pages/Profile')) },
+  { path: '/settings', component: lazy(() => import('./pages/Settings')) },
+];
+```
+
+---
+
+## 15. Что такое React Portal?
+
+**Portal** — способ отрендерить дочерний компонент в DOM-узел вне иерархии родителя, сохраняя при этом контекст React (события всплывают по React-дереву, не DOM-дереву).
+
+```jsx
+import { createPortal } from 'react-dom';
+
+function Modal({ children, onClose }) {
+  return createPortal(
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
+        {children}
+      </div>
+    </div>,
+    document.body // рендерим в body, а не в текущий контейнер
+  );
+}
+
+// Использование:
+function App() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button onClick={() => setOpen(true)}>Открыть</button>
+      {open && <Modal onClose={() => setOpen(false)}>Контент</Modal>}
+    </>
+  );
+}
+```
+
+**Типичное применение:** модальные окна, тосты/уведомления, тултипы, выпадающие меню — всё, что должно быть поверх остального контента (z-index, overflow: hidden).
+
+---
+
+## 16. Как создавать кастомные хуки?
+
+**Кастомный хук** — функция с именем на `use`, внутри которой используются другие хуки. Позволяет переиспользовать логику между компонентами.
+
+```jsx
+// useLocalStorage — синхронизация state с localStorage
+function useLocalStorage(key, initialValue) {
+  const [value, setValue] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(key)) ?? initialValue;
+    } catch {
+      return initialValue;
+    }
+  });
+
+  const setStoredValue = (newValue) => {
+    setValue(newValue);
+    localStorage.setItem(key, JSON.stringify(newValue));
+  };
+
+  return [value, setStoredValue];
+}
+
+// useFetch — универсальный хук для запросов
+function useFetch(url) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(url, { signal: controller.signal })
+      .then(r => r.json())
+      .then(setData)
+      .catch(e => !controller.signal.aborted && setError(e))
+      .finally(() => setLoading(false));
+    return () => controller.abort();
+  }, [url]);
+
+  return { data, loading, error };
+}
+
+// Использование:
+const { data: user, loading } = useFetch('/api/user');
+```
+
+**Правила:** имя начинается с `use`, соблюдает правила хуков, не возвращает JSX.
+
+---
