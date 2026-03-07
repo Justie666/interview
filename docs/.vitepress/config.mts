@@ -12,6 +12,7 @@ export default defineConfig({
       { text: 'TypeScript', link: '/typescript' },
       { text: 'Browser', link: '/browser' },
       { text: 'CSS', link: '/css' },
+      { text: 'Задачи', link: '/tasks' },
     ],
 
     sidebar: [
@@ -23,6 +24,7 @@ export default defineConfig({
           { text: 'TypeScript', link: '/typescript' },
           { text: 'Browser & Network', link: '/browser' },
           { text: 'CSS', link: '/css' },
+          { text: 'Практические задачи', link: '/tasks' },
         ]
       }
     ],
