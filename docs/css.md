@@ -204,3 +204,279 @@ main { flex: 1; }
 | `sticky` | Да | Предка / viewport | Условно |
 
 ---
+
+## 6. В чём разница display:none, visibility:hidden и opacity:0?
+
+Все три скрывают элемент визуально, но работают по-разному:
+
+| | `display: none` | `visibility: hidden` | `opacity: 0` |
+| --- | --- | --- | --- |
+| Занимает место в потоке | Нет | Да | Да |
+| Дочерние элементы | Скрыты (нельзя показать) | Можно показать через `visible` | Скрыты (нельзя показать) |
+| Клики/события | Нет | Нет | Да (элемент кликабелен!) |
+| Reflow при изменении | Да | Нет | Нет |
+| Анимируемость | Нет | Нет | Да (transition работает) |
+
+```css
+/* display: none — элемент полностью убран из потока */
+.hidden { display: none; }
+
+/* visibility: hidden — место сохраняется, дочерний можно показать */
+.invisible { visibility: hidden; }
+.invisible .child { visibility: visible; } /* этот дочерний будет виден */
+
+/* opacity: 0 — прозрачный, но кликабельный! */
+.transparent { opacity: 0; }
+/* Часто используют с pointer-events для отключения кликов */
+.transparent { opacity: 0; pointer-events: none; }
+```
+
+**Когда что использовать:**
+- `display: none` — убрать элемент полностью (меню, модалки в DOM)
+- `visibility: hidden` — скрыть но сохранить место (skeleton-загрузка)
+- `opacity: 0` — анимации появления/исчезновения (fade in/out)
+
+---
+
+## 7. Что такое CSS Custom Properties (переменные)?
+
+**CSS-переменные** — значения, определённые один раз и переиспользуемые по всему коду. Каскадны и доступны из JS.
+
+```css
+/* Объявление — обычно в :root (глобальный scope) */
+:root {
+  --color-primary: #3b82f6;
+  --spacing-md: 16px;
+  --border-radius: 8px;
+}
+
+/* Использование */
+.button {
+  background: var(--color-primary);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius);
+}
+
+/* Запасное значение */
+color: var(--color-text, #333);
+
+/* Переопределение локально */
+.card {
+  --border-radius: 4px; /* действует только внутри .card */
+}
+```
+
+**Тёмная тема:**
+
+```css
+:root                  { --bg: white;   --text: black; }
+[data-theme="dark"]    { --bg: #0f172a; --text: white; }
+
+body { background: var(--bg); color: var(--text); }
+```
+
+**Доступ из JS:**
+
+```js
+// Читать
+getComputedStyle(document.documentElement).getPropertyValue('--color-primary');
+
+// Записать
+document.documentElement.style.setProperty('--color-primary', '#ef4444');
+```
+
+**Отличие от переменных SASS:** CSS-переменные живут в рантайме — их можно изменять динамически. SASS-переменные компилируются в статические значения.
+
+---
+
+## 8. В чём разница transition и animation?
+
+**`transition`** — плавный переход между двумя состояниями. Запускается при изменении свойства:
+
+```css
+.button {
+  background: blue;
+  transform: scale(1);
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.button:hover {
+  background: darkblue;
+  transform: scale(1.05);
+}
+```
+
+**`animation`** — управляемая анимация через `@keyframes`. Может быть бесконечной, с задержками, реверсом:
+
+```css
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+.loader { animation: spin 1s linear infinite; }
+.badge  { animation: pulse 2s ease-in-out 3; /* 3 раза */ }
+```
+
+| | `transition` | `animation` |
+| --- | --- | --- |
+| Триггер | Изменение свойства (`:hover`, класс) | Автоматически или через JS |
+| Количество шагов | 2 (начало → конец) | Любое (`@keyframes`) |
+| Повторение | Нет | `infinite`, n раз |
+| `isPending` / состояние | Нет | `animation-play-state` |
+
+**Производительность:** анимируйте только `transform` и `opacity` — они не вызывают reflow/repaint и работают на GPU. Избегайте анимации `width`, `height`, `top`, `left`.
+
+---
+
+## 9. Что такое медиазапросы и адаптивная вёрстка?
+
+**Media queries** — применяют стили при определённых условиях (ширина экрана, тема ОС, ориентация).
+
+**Mobile-first подход** (рекомендуемый) — базовые стили для мобильных, расширяем вверх:
+
+```css
+/* Базовые стили — мобильные */
+.container { padding: 16px; }
+
+@media (min-width: 768px) {  /* tablet+ */
+  .container { padding: 24px; }
+}
+
+@media (min-width: 1024px) { /* desktop+ */
+  .container { padding: 32px; max-width: 1200px; margin: 0 auto; }
+}
+
+/* Другие условия */
+@media (prefers-color-scheme: dark) { /* тёмная тема ОС */ }
+@media (prefers-reduced-motion: reduce) { /* отключить анимации */ }
+@media print { .no-print { display: none; } }
+```
+
+**Современные единицы:**
+
+```css
+font-size: 1rem;                      /* относительно корневого font-size */
+padding: 2em;                         /* относительно font-size элемента */
+height: 100dvh;                       /* dynamic viewport height (учитывает адресную строку) */
+font-size: clamp(14px, 2vw, 18px);    /* min, preferred, max */
+```
+
+**Container queries** — стили по размеру контейнера, а не viewport:
+
+```css
+.card-wrapper { container-type: inline-size; }
+
+@container (min-width: 400px) {
+  .card { flex-direction: row; }
+}
+```
+
+---
+
+## 10. Что такое BEM, CSS Modules и CSS-in-JS?
+
+**BEM (Block Element Modifier)** — методология именования классов для избежания конфликтов:
+
+```css
+/* Block — независимый компонент */
+.button { }
+
+/* Element — часть блока (двойное подчёркивание) */
+.button__icon { }
+.button__text { }
+
+/* Modifier — вариант (двойное тире) */
+.button--primary { }
+.button--disabled { }
+```
+
+```html
+<button class="button button--primary">
+  <span class="button__icon">→</span>
+  <span class="button__text">Отправить</span>
+</button>
+```
+
+**CSS Modules** — CSS локален по умолчанию, классы генерируются уникальными при сборке:
+
+```css
+/* Button.module.css */
+.button { background: blue; }
+.primary { background: darkblue; }
+```
+
+```jsx
+import styles from './Button.module.css';
+<button className={`${styles.button} ${styles.primary}`} />
+// → class="Button_button__x7k2q Button_primary__9mf3a"
+```
+
+**CSS-in-JS (styled-components, Emotion)** — стили в JS, полный доступ к пропсам компонента:
+
+```jsx
+const Button = styled.button`
+  background: ${props => props.primary ? 'darkblue' : 'white'};
+  padding: 8px 16px;
+  &:hover { opacity: 0.8; }
+`;
+```
+
+| | BEM | CSS Modules | CSS-in-JS |
+| --- | --- | --- | --- |
+| Изоляция | Конвенция | Автоматическая | Автоматическая |
+| Динамические стили | Нет | Ограничена | Полная (props) |
+| Runtime overhead | Нет | Нет | Да |
+| Популярность сейчас | Legacy | Стандарт в React | Снижается |
+
+---
+
+## 11. Что такое z-index и stacking context?
+
+**`z-index`** — управляет порядком наложения элементов по оси Z. Работает только на positioned элементах (`position != static`) и flex/grid-детях.
+
+```css
+.modal   { position: fixed;    z-index: 1000; }
+.tooltip { position: absolute; z-index: 100; }
+.header  { position: sticky;   z-index: 10; }
+```
+
+**Stacking context (контекст наложения)** — изолированная группа, внутри которой `z-index` работает независимо. Элементы из разных контекстов сравниваются по `z-index` их контекстов, а не их собственному.
+
+**Что создаёт stacking context:**
+- `position` + `z-index != auto`
+- `opacity < 1`
+- `transform`, `filter`, `will-change`
+- `isolation: isolate`
+
+```css
+/* Классическая ловушка */
+.parent {
+  position: relative;
+  z-index: 1; /* создаёт stacking context */
+}
+
+.modal {
+  position: fixed;
+  z-index: 9999; /* ограничен контекстом .parent!
+                    никогда не будет выше элементов снаружи с z-index > 1 */
+}
+```
+
+```css
+/* Решение 1 — React Portal: рендерить модал в document.body */
+
+/* Решение 2 — isolation для явного контекста без z-index */
+.card {
+  isolation: isolate; /* внутренние z-index не вырываются наружу */
+}
+```
+
+**Правило отладки:** если `z-index` не работает — проверьте, не находится ли элемент внутри чужого stacking context.
+
+---

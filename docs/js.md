@@ -801,3 +801,199 @@ class OrderService {
 ```
 
 ---
+
+## 25. В чём разница == и ===? Что такое приведение типов?
+
+**`===` (строгое равенство)** — сравнивает значение И тип, без приведений. Всегда предпочтительно.
+
+**`==` (нестрогое равенство)** — приводит типы перед сравнением по сложным правилам.
+
+```js
+1 === 1           // true
+1 === '1'         // false — разные типы
+
+1 == '1'          // true  (строка → число)
+0 == false        // true  (false → 0)
+null == undefined // true  (специальное правило)
+null == 0         // false (!)
+[] == ![]         // true  — классический вопрос на собеседовании
+```
+
+**Приведение типов (Type Coercion):**
+
+```js
+// Явное
+Number('42')   // 42
+String(42)     // '42'
+Boolean(0)     // false
+
+// Неявное — в операциях
+'5' + 3        // '53'  (число → строка, + конкатенирует)
+'5' - 3        // 2     (строка → число, - арифметический)
++true          // 1
++null          // 0
++undefined     // NaN
+```
+
+**Falsy значения** (приводятся к `false`): `0`, `''`, `null`, `undefined`, `NaN`, `false`, `0n`.
+
+**Правило:** всегда используйте `===`. `==` — источник трудноуловимых багов.
+
+---
+
+## 26. В чём разница null и undefined?
+
+```js
+// undefined — переменная объявлена, но не инициализирована (JS устанавливает сам)
+let x;
+x;                // undefined
+
+function fn(a) {}
+fn();             // a === undefined — аргумент не передан
+
+const obj = {};
+obj.missing;      // undefined — свойство не существует
+
+// null — явное отсутствие значения (программист ставит намеренно)
+let user = null;  // пользователь ещё не загружен
+```
+
+| | `undefined` | `null` |
+| --- | --- | --- |
+| `typeof` | `'undefined'` | `'object'` (исторический баг) |
+| Происхождение | JS устанавливает сам | Программист задаёт явно |
+| `== null` | `true` | `true` |
+| `=== null` | `false` | `true` |
+
+```js
+// Стандартный паттерн — проверка на оба сразу
+if (value == null) { /* null или undefined */ }
+```
+
+---
+
+## 27. В чём разница ES Modules и CommonJS?
+
+**CommonJS (Node.js, legacy)** — синхронная загрузка, `require` в рантайме:
+
+```js
+// Экспорт
+module.exports = { greet };
+
+// Импорт — работает в любом месте кода, путь может быть динамическим
+const { greet } = require('./utils');
+const config = require(`./configs/${env}`); // OK
+```
+
+**ES Modules (современный стандарт)** — статическая загрузка, анализируется до выполнения:
+
+```js
+// Экспорт
+export function greet() {}
+export default class App {}
+
+// Импорт — только на верхнем уровне модуля
+import { greet } from './utils.js';
+
+// Динамический импорт — возвращает Promise
+const { greet } = await import('./utils.js');
+```
+
+| | CommonJS | ES Modules |
+| --- | --- | --- |
+| Среда | Node.js (legacy) | Браузер + Node.js |
+| Загрузка | Синхронная | Асинхронная |
+| Tree shaking | Нет | Да |
+| Динамический путь | `require(variable)` | `await import(variable)` |
+
+**Tree shaking** — бандлер (Vite, Webpack) видит статические импорты и удаляет неиспользуемый код из бандла. С CommonJS это невозможно — импорты динамические.
+
+---
+
+## 28. Что такое optional chaining (?.) и nullish coalescing (??)?
+
+**Optional chaining `?.`** — безопасный доступ к свойствам потенциально `null`/`undefined` значений. Возвращает `undefined` вместо `TypeError`.
+
+```js
+const user = { profile: null };
+
+user.profile.avatar;   // TypeError!
+user?.profile?.avatar; // undefined — безопасно
+
+user?.getAvatar?.();   // undefined (безопасный вызов метода)
+arr?.[0];              // undefined (безопасный доступ по индексу)
+```
+
+**Nullish coalescing `??`** — возвращает правый операнд только если левый `null` или `undefined`.
+
+```js
+// || — реагирует на все falsy (0, '', false) — это часто баг!
+const count = userCount || 10;  // 0 → вернёт 10 (неверно!)
+
+// ?? — только null/undefined
+const count = userCount ?? 10;  // 0 → вернёт 0 (верно!)
+const name  = user.name ?? 'Аноним';
+
+// Часто комбинируют:
+const city = user?.address?.city ?? 'Не указан';
+```
+
+**Операторы присвоения:**
+
+```js
+user.name  ??= 'Аноним'; // присвоить только если null/undefined
+config.log ||= true;     // присвоить если falsy
+el.hidden  &&= isAdmin;  // присвоить только если уже truthy
+```
+
+---
+
+## 29. Какие паттерны проектирования чаще всего встречаются в JavaScript?
+
+**Singleton** — один экземпляр на всё приложение:
+
+```js
+class Store {
+  static #instance = null;
+
+  static getInstance() {
+    if (!Store.#instance) Store.#instance = new Store();
+    return Store.#instance;
+  }
+}
+
+Store.getInstance() === Store.getInstance(); // true
+```
+
+**Observer (pub/sub)** — подписчики реагируют на события. Основа всех событийных систем (DOM, Node.js EventEmitter, Redux):
+
+```js
+class EventEmitter {
+  #handlers = {};
+
+  on(event, fn)   { (this.#handlers[event] ??= []).push(fn); }
+  off(event, fn)  { this.#handlers[event] = this.#handlers[event]?.filter(h => h !== fn); }
+  emit(event, data) { this.#handlers[event]?.forEach(fn => fn(data)); }
+}
+
+const emitter = new EventEmitter();
+emitter.on('login', user => console.log('Logged in:', user));
+emitter.emit('login', { id: 1 });
+```
+
+**Factory** — создание объектов с логикой выбора, без `new` у потребителя:
+
+```js
+function createUser(role) {
+  const base = { role, createdAt: Date.now() };
+  if (role === 'admin') return { ...base, permissions: ['read', 'write', 'delete'] };
+  return { ...base, permissions: ['read'] };
+}
+```
+
+**Паттерны в React:**
+- **HOC** — `React.memo`, `withAuth(Component)` — оборачивают компонент
+- **Custom Hooks** — переиспользование логики (`useFetch`, `useLocalStorage`)
+- **Compound Components** — `<Select>` + `<Select.Option>` с общим контекстом
+
+---

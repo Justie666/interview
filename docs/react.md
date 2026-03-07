@@ -925,3 +925,143 @@ function Counter() {
 - **MobX** — при OOP-подходе или сложных вычислительных графах
 
 ---
+
+## 29. Что такое Flux-архитектура?
+
+**Flux** — архитектурный паттерн для управления состоянием, разработанный Meta для React. Основная идея — **однонаправленный поток данных**.
+
+**Четыре сущности:**
+
+```
+Action → Dispatcher → Store → View → (Action снова)
+```
+
+- **Action** — объект, описывающий событие: `{ type: 'ADD_TODO', payload: 'text' }`
+- **Dispatcher** — центральный хаб, принимает Actions и рассылает их всем Store
+- **Store** — хранит состояние и логику обновления; подписывается на Dispatcher
+- **View** — React-компоненты, читают Store, при взаимодействии создают новые Actions
+
+```js
+// Action
+const addTodo = (text) => ({ type: 'ADD_TODO', payload: text });
+
+// Dispatcher (упрощённо)
+dispatcher.dispatch(addTodo('Купить молоко'));
+
+// Store
+class TodoStore extends EventEmitter {
+  #todos = [];
+
+  handleAction(action) {
+    if (action.type === 'ADD_TODO') {
+      this.#todos.push(action.payload);
+      this.emit('change'); // уведомляем View
+    }
+  }
+
+  getTodos() { return this.#todos; }
+}
+```
+
+**Почему однонаправленный поток важен:**
+- Состояние предсказуемо — только Actions могут его изменить
+- Легко отлаживать — можно воспроизвести любое состояние по цепочке Actions
+- Избегает проблем двустороннего связывания (как в AngularJS)
+
+**Redux** — самая популярная реализация Flux. Упростил: один Store вместо многих, reducer вместо Store-классов.
+
+---
+
+## 30. Что такое useTransition и useDeferredValue?
+
+Оба хука позволяют **понизить приоритет** обновления состояния — React будет прерывать его в пользу срочных обновлений (ввод пользователя).
+
+**`useTransition`** — оборачивает setState, получаем флаг `isPending`:
+
+```jsx
+const [isPending, startTransition] = useTransition();
+
+function handleSearch(query) {
+  setInputValue(query); // срочное — обновляется немедленно
+
+  startTransition(() => {
+    setResults(heavyFilter(data, query)); // не срочное — React может отложить
+  });
+}
+
+return (
+  <>
+    <input value={inputValue} onChange={e => handleSearch(e.target.value)} />
+    {isPending ? <Spinner /> : <ResultsList results={results} />}
+  </>
+);
+```
+
+**`useDeferredValue`** — откладывает значение. Нужен когда нет доступа к setState (приходит пропсом):
+
+```jsx
+function SearchResults({ query }) {
+  const deferredQuery = useDeferredValue(query);
+  // deferredQuery отстаёт от query, пересчитывается с низким приоритетом
+  const results = useMemo(() => heavyFilter(data, deferredQuery), [deferredQuery]);
+
+  return <ul>{results.map(r => <li key={r.id}>{r.name}</li>)}</ul>;
+}
+```
+
+| | `useTransition` | `useDeferredValue` |
+| --- | --- | --- |
+| Что откладывает | setState-вызов | Значение (пропс или переменную) |
+| `isPending` | Да | Нет |
+| Когда | Есть доступ к setState | Только входящее значение |
+
+---
+
+## 31. Что такое forwardRef и useImperativeHandle?
+
+**`forwardRef`** — позволяет родителю передать `ref` внутрь дочернего компонента на DOM-элемент.
+
+```jsx
+// Без forwardRef — ref указывает на экземпляр компонента, не на input
+function Input({ placeholder }) {
+  return <input placeholder={placeholder} />;
+}
+
+// С forwardRef — ref пробрасывается на внутренний элемент
+const Input = forwardRef(function Input({ placeholder }, ref) {
+  return <input ref={ref} placeholder={placeholder} />;
+});
+
+// Использование
+function Form() {
+  const inputRef = useRef(null);
+  useEffect(() => { inputRef.current.focus(); }, []);
+  return <Input ref={inputRef} placeholder="Имя" />;
+}
+```
+
+**`useImperativeHandle`** — ограничивает что именно видит родитель через ref:
+
+```jsx
+const Input = forwardRef(function Input(props, ref) {
+  const inputRef = useRef(null);
+
+  useImperativeHandle(ref, () => ({
+    focus: () => inputRef.current.focus(),
+    clear: () => { inputRef.current.value = ''; },
+    // Родитель видит только эти два метода, не весь DOM-элемент
+  }));
+
+  return <input ref={inputRef} {...props} />;
+});
+```
+
+**В React 19** `forwardRef` не нужен — `ref` передаётся как обычный проп:
+
+```jsx
+function Input({ ref, ...props }) {
+  return <input ref={ref} {...props} />;
+}
+```
+
+---
