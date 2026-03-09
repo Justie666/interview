@@ -41,28 +41,6 @@ console.log("4"); // синхронно
 // Вывод: 1 → 4 → 3 → 2
 ```
 
-## Как работают Call Stack, Callback Queue и Event Loop?
-
-**Call Stack** — структура LIFO. При вызове функции она кладётся на вершину стека, при завершении — убирается. Переполнение → `RangeError: Maximum call stack size exceeded`.
-
-**Callback Queue (Macrotask Queue)** — очередь FIFO. Сюда попадают коллбэки `setTimeout`, `setInterval`, DOM-событий. Event Loop берёт задачу оттуда **только когда Call Stack пуст**.
-
-**Microtask Queue** — приоритетная очередь. Полностью очищается **перед каждой** следующей макрозадачей. Именно поэтому `Promise.then` выполняется раньше `setTimeout(fn, 0)`.
-
-```js
-setTimeout(() => console.log("macro"), 0);
-Promise.resolve().then(() => console.log("micro"));
-console.log("sync");
-
-// Вывод: sync → micro → macro
-```
-
-**Event Loop** — бесконечный цикл, который:
-
-1. Проверяет, пуст ли Call Stack
-2. Сначала опустошает Microtask Queue
-3. Затем берёт одну задачу из Macrotask Queue
-
 ## Что такое замыкания и для чего они нужны?
 
 **Замыкание** — функция, которая «помнит» переменные из своего лексического окружения даже после завершения внешней функции.
@@ -399,54 +377,28 @@ const greet = () => ({ message: "hello" }); // вернуть объект
 
 Обычная функция: `this` определяется **в момент вызова** — зависит от того, как функция была вызвана.
 
-Стрелочная функция: `this` берётся из **лексического окружения** в момент объявления и не меняется никогда.
+Стрелочная функция: `this` берётся из **лексического окружения** в момент объявления и **не может быть изменён** никаким способом — `call`, `apply`, `bind` игнорируются.
 
 ```js
 const obj = {
   name: "Alex",
-  regular() {
-    return this.name;
-  }, // 'Alex'
-  arrow: () => this.name, // undefined (this = window)
+  regular() { return this.name; }, // 'Alex'
+  arrow: () => this.name,          // undefined (this = window)
 };
 
 // В классах стрелочные методы всегда сохраняют this:
 class Button {
   handleClick = () => console.log(this); // всегда экземпляр класса
 }
-```
 
-Стрелочные функции не имеют собственных `this`, `arguments`, `super`, `new.target` — их нельзя использовать как конструкторы.
-
-## Можно ли изменить this в стрелочной функции?
-
-**Нет.** `this` стрелочной функции берётся из лексического окружения в момент определения и **не может быть изменён** никаким способом.
-
-```js
-const arrow = () => console.log(this);
-
-// Все попытки изменить this — игнорируются:
-arrow.call({ x: 1 }); // window / undefined (strict mode)
-arrow.apply({ x: 1 }); // то же самое
+// Попытки изменить this — игнорируются:
+const arrow = () => {};
+arrow.call({ x: 1 });  // window / undefined (strict mode)
 arrow.bind({ x: 1 })(); // то же самое
-new arrow(); // TypeError: arrow is not a constructor
+new arrow();            // TypeError: arrow is not a constructor
 ```
 
-**Практическая проблема:**
-
-```js
-const obj = {
-  name: "Alex",
-  // Стрелочная функция берёт this из момента объявления объекта — это глобальный контекст
-  greet: () => `Привет, ${this.name}`, // undefined!
-  // Обычный метод — this определяется при вызове
-  greetOk() {
-    return `Привет, ${this.name}`;
-  }, // 'Alex'
-};
-```
-
-**Вывод:** если нужна возможность привязки `this` — используйте обычную функцию. Стрелочная — для колбэков, где нужно сохранить контекст внешнего кода.
+Стрелочные функции не имеют собственных `this`, `arguments`, `super`, `new.target`. Если нужна возможность привязки `this` — используйте обычную функцию.
 
 ## В чём разница call, apply и bind?
 
