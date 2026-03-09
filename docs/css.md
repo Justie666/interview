@@ -6,48 +6,59 @@
 
 **Формула специфичности (a, b, c, d):**
 
-| Тип селектора | Вес |
-| --- | --- |
-| `!important` | Перебивает всё |
-| Инлайн-стиль (`style=""`) | (1, 0, 0, 0) |
-| ID (`#id`) | (0, 1, 0, 0) |
-| Класс (`.class`), псевдокласс (`:hover`), атрибут (`[type]`) | (0, 0, 1, 0) |
-| Тег (`div`), псевдоэлемент (`::before`) | (0, 0, 0, 1) |
-| Универсальный (`*`), комбинаторы (`>`, `+`, `~`) | (0, 0, 0, 0) |
+| Тип селектора                                                | Вес            |
+| ------------------------------------------------------------ | -------------- |
+| `!important`                                                 | Перебивает всё |
+| Инлайн-стиль (`style=""`)                                    | (1, 0, 0, 0)   |
+| ID (`#id`)                                                   | (0, 1, 0, 0)   |
+| Класс (`.class`), псевдокласс (`:hover`), атрибут (`[type]`) | (0, 0, 1, 0)   |
+| Тег (`div`), псевдоэлемент (`::before`)                      | (0, 0, 0, 1)   |
+| Универсальный (`*`), комбинаторы (`>`, `+`, `~`)             | (0, 0, 0, 0)   |
 
 ```css
 /* Специфичность (0,0,0,1) */
-p { color: black; }
+p {
+  color: black;
+}
 
 /* Специфичность (0,0,1,0) — побеждает */
-.text { color: blue; }
+.text {
+  color: blue;
+}
 
 /* Специфичность (0,1,0,0) — побеждает */
-#title { color: red; }
+#title {
+  color: red;
+}
 
 /* Специфичность (1,0,0,0) — побеждает */
 <p style="color: green">...</p>
 
 /* !important — перебивает всё (включая инлайн) */
-p { color: purple !important; }
+p {
+  color: purple !important;
+}
 ```
 
 **Сравнение идёт слева направо:**
 
 ```css
 /* (0,1,1,1) vs (0,0,3,0) — побеждает первый */
-#nav .item a  { color: red; }   /* 0,1,1,1 */
-.menu .link.active { color: blue; } /* 0,0,3,0 */
+#nav .item a {
+  color: red;
+} /* 0,1,1,1 */
+.menu .link.active {
+  color: blue;
+} /* 0,0,3,0 */
 ```
 
 **Правила при равной специфичности:** побеждает правило, объявленное **позже** в файле.
 
 **Рекомендации:**
+
 - Избегайте `!important` — создаёт трудноотлаживаемые конфликты
 - Держите специфичность низкой — пишите классами, не ID
 - БЭМ и CSS-модули решают проблему специфичности за счёт уникальных классов
-
----
 
 ## 2. Что такое блочная модель (Box Model) в CSS?
 
@@ -90,12 +101,12 @@ p { color: purple !important; }
 }
 
 /* Современный стандарт — применять ко всем элементам */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 ```
-
----
 
 ## 3. Что такое Flexbox и когда его использовать?
 
@@ -104,18 +115,18 @@ p { color: purple !important; }
 ```css
 .container {
   display: flex;
-  flex-direction: row;          /* row | column | row-reverse */
+  flex-direction: row; /* row | column | row-reverse */
   justify-content: space-between; /* выравнивание по главной оси */
-  align-items: center;          /* выравнивание по поперечной оси */
-  flex-wrap: wrap;              /* перенос при нехватке места */
-  gap: 16px;                    /* отступы между элементами */
+  align-items: center; /* выравнивание по поперечной оси */
+  flex-wrap: wrap; /* перенос при нехватке места */
+  gap: 16px; /* отступы между элементами */
 }
 
 /* Свойства дочерних элементов */
 .item {
-  flex: 1;           /* flex-grow: 1, flex-shrink: 1, flex-basis: 0 */
-  flex-grow: 2;      /* занимает в 2 раза больше свободного места */
-  flex-shrink: 0;    /* не сжимается */
+  flex: 1; /* flex-grow: 1, flex-shrink: 1, flex-basis: 0 */
+  flex-grow: 2; /* занимает в 2 раза больше свободного места */
+  flex-shrink: 0; /* не сжимается */
   align-self: flex-start; /* переопределяет align-items для этого элемента */
 }
 ```
@@ -136,10 +147,10 @@ body {
   flex-direction: column;
   min-height: 100vh;
 }
-main { flex: 1; }
+main {
+  flex: 1;
+}
 ```
-
----
 
 ## 4. Что такое CSS Grid?
 
@@ -165,78 +176,99 @@ main { flex: 1; }
 
 **Когда Flexbox, когда Grid:**
 
-| | Flexbox | Grid |
-| --- | --- | --- |
-| Направление | Одно (строка или столбец) | Оба сразу |
-| Применение | Навигация, карточки в ряд, центрирование | Сложные макеты страниц |
-| Выравнивание | По содержимому | По явной сетке |
+|              | Flexbox                                  | Grid                   |
+| ------------ | ---------------------------------------- | ---------------------- |
+| Направление  | Одно (строка или столбец)                | Оба сразу              |
+| Применение   | Навигация, карточки в ряд, центрирование | Сложные макеты страниц |
+| Выравнивание | По содержимому                           | По явной сетке         |
 
 **Правило:** Flexbox — для компонентов, Grid — для макета страницы.
-
----
 
 ## 5. В чём разница position: relative, absolute, fixed, sticky?
 
 ```css
 /* relative — смещается относительно своего нормального положения,
    остаётся в потоке, создаёт контекст позиционирования */
-.relative { position: relative; top: 10px; left: 20px; }
+.relative {
+  position: relative;
+  top: 10px;
+  left: 20px;
+}
 
 /* absolute — вырывается из потока, позиционируется относительно
    ближайшего предка с position != static */
-.absolute { position: absolute; top: 0; right: 0; }
+.absolute {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
 
 /* fixed — вырывается из потока, позиционируется относительно
    viewport, не скроллится */
-.fixed { position: fixed; bottom: 20px; right: 20px; }
+.fixed {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+}
 
 /* sticky — гибрид relative и fixed: ведёт себя как relative
    до достижения порога скролла, затем как fixed */
-.sticky { position: sticky; top: 0; } /* прилипает при скролле */
+.sticky {
+  position: sticky;
+  top: 0;
+} /* прилипает при скролле */
 ```
 
-| | В потоке | Относительно | Скроллится |
-| --- | --- | --- | --- |
-| `static` | Да | — | Да |
-| `relative` | Да | Себя | Да |
-| `absolute` | Нет | Предка с position | Да |
-| `fixed` | Нет | Viewport | Нет |
-| `sticky` | Да | Предка / viewport | Условно |
-
----
+|            | В потоке | Относительно      | Скроллится |
+| ---------- | -------- | ----------------- | ---------- |
+| `static`   | Да       | —                 | Да         |
+| `relative` | Да       | Себя              | Да         |
+| `absolute` | Нет      | Предка с position | Да         |
+| `fixed`    | Нет      | Viewport          | Нет        |
+| `sticky`   | Да       | Предка / viewport | Условно    |
 
 ## 6. В чём разница display:none, visibility:hidden и opacity:0?
 
 Все три скрывают элемент визуально, но работают по-разному:
 
-| | `display: none` | `visibility: hidden` | `opacity: 0` |
-| --- | --- | --- | --- |
-| Занимает место в потоке | Нет | Да | Да |
-| Дочерние элементы | Скрыты (нельзя показать) | Можно показать через `visible` | Скрыты (нельзя показать) |
-| Клики/события | Нет | Нет | Да (элемент кликабелен!) |
-| Reflow при изменении | Да | Нет | Нет |
-| Анимируемость | Нет | Нет | Да (transition работает) |
+|                         | `display: none`          | `visibility: hidden`           | `opacity: 0`             |
+| ----------------------- | ------------------------ | ------------------------------ | ------------------------ |
+| Занимает место в потоке | Нет                      | Да                             | Да                       |
+| Дочерние элементы       | Скрыты (нельзя показать) | Можно показать через `visible` | Скрыты (нельзя показать) |
+| Клики/события           | Нет                      | Нет                            | Да (элемент кликабелен!) |
+| Reflow при изменении    | Да                       | Нет                            | Нет                      |
+| Анимируемость           | Нет                      | Нет                            | Да (transition работает) |
 
 ```css
 /* display: none — элемент полностью убран из потока */
-.hidden { display: none; }
+.hidden {
+  display: none;
+}
 
 /* visibility: hidden — место сохраняется, дочерний можно показать */
-.invisible { visibility: hidden; }
-.invisible .child { visibility: visible; } /* этот дочерний будет виден */
+.invisible {
+  visibility: hidden;
+}
+.invisible .child {
+  visibility: visible;
+} /* этот дочерний будет виден */
 
 /* opacity: 0 — прозрачный, но кликабельный! */
-.transparent { opacity: 0; }
+.transparent {
+  opacity: 0;
+}
 /* Часто используют с pointer-events для отключения кликов */
-.transparent { opacity: 0; pointer-events: none; }
+.transparent {
+  opacity: 0;
+  pointer-events: none;
+}
 ```
 
 **Когда что использовать:**
+
 - `display: none` — убрать элемент полностью (меню, модалки в DOM)
 - `visibility: hidden` — скрыть но сохранить место (skeleton-загрузка)
 - `opacity: 0` — анимации появления/исчезновения (fade in/out)
-
----
 
 ## 7. Что такое CSS Custom Properties (переменные)?
 
@@ -269,25 +301,32 @@ color: var(--color-text, #333);
 **Тёмная тема:**
 
 ```css
-:root                  { --bg: white;   --text: black; }
-[data-theme="dark"]    { --bg: #0f172a; --text: white; }
+:root {
+  --bg: white;
+  --text: black;
+}
+[data-theme="dark"] {
+  --bg: #0f172a;
+  --text: white;
+}
 
-body { background: var(--bg); color: var(--text); }
+body {
+  background: var(--bg);
+  color: var(--text);
+}
 ```
 
 **Доступ из JS:**
 
 ```js
 // Читать
-getComputedStyle(document.documentElement).getPropertyValue('--color-primary');
+getComputedStyle(document.documentElement).getPropertyValue("--color-primary");
 
 // Записать
-document.documentElement.style.setProperty('--color-primary', '#ef4444');
+document.documentElement.style.setProperty("--color-primary", "#ef4444");
 ```
 
 **Отличие от переменных SASS:** CSS-переменные живут в рантайме — их можно изменять динамически. SASS-переменные компилируются в статические значения.
-
----
 
 ## 8. В чём разница transition и animation?
 
@@ -297,7 +336,9 @@ document.documentElement.style.setProperty('--color-primary', '#ef4444');
 .button {
   background: blue;
   transform: scale(1);
-  transition: background 0.3s ease, transform 0.2s ease;
+  transition:
+    background 0.3s ease,
+    transform 0.2s ease;
 }
 
 .button:hover {
@@ -310,29 +351,40 @@ document.documentElement.style.setProperty('--color-primary', '#ef4444');
 
 ```css
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.4; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 
-.loader { animation: spin 1s linear infinite; }
-.badge  { animation: pulse 2s ease-in-out 3; /* 3 раза */ }
+.loader {
+  animation: spin 1s linear infinite;
+}
+.badge {
+  animation: pulse 2s ease-in-out 3; /* 3 раза */
+}
 ```
 
-| | `transition` | `animation` |
-| --- | --- | --- |
-| Триггер | Изменение свойства (`:hover`, класс) | Автоматически или через JS |
-| Количество шагов | 2 (начало → конец) | Любое (`@keyframes`) |
-| Повторение | Нет | `infinite`, n раз |
-| `isPending` / состояние | Нет | `animation-play-state` |
+|                         | `transition`                         | `animation`                |
+| ----------------------- | ------------------------------------ | -------------------------- |
+| Триггер                 | Изменение свойства (`:hover`, класс) | Автоматически или через JS |
+| Количество шагов        | 2 (начало → конец)                   | Любое (`@keyframes`)       |
+| Повторение              | Нет                                  | `infinite`, n раз          |
+| `isPending` / состояние | Нет                                  | `animation-play-state`     |
 
 **Производительность:** анимируйте только `transform` и `opacity` — они не вызывают reflow/repaint и работают на GPU. Избегайте анимации `width`, `height`, `top`, `left`.
-
----
 
 ## 9. Что такое медиазапросы и адаптивная вёрстка?
 
@@ -342,42 +394,62 @@ document.documentElement.style.setProperty('--color-primary', '#ef4444');
 
 ```css
 /* Базовые стили — мобильные */
-.container { padding: 16px; }
-
-@media (min-width: 768px) {  /* tablet+ */
-  .container { padding: 24px; }
+.container {
+  padding: 16px;
 }
 
-@media (min-width: 1024px) { /* desktop+ */
-  .container { padding: 32px; max-width: 1200px; margin: 0 auto; }
+@media (min-width: 768px) {
+  /* tablet+ */
+  .container {
+    padding: 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* desktop+ */
+  .container {
+    padding: 32px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
 }
 
 /* Другие условия */
-@media (prefers-color-scheme: dark) { /* тёмная тема ОС */ }
-@media (prefers-reduced-motion: reduce) { /* отключить анимации */ }
-@media print { .no-print { display: none; } }
+@media (prefers-color-scheme: dark) {
+  /* тёмная тема ОС */
+}
+@media (prefers-reduced-motion: reduce) {
+  /* отключить анимации */
+}
+@media print {
+  .no-print {
+    display: none;
+  }
+}
 ```
 
 **Современные единицы:**
 
 ```css
-font-size: 1rem;                      /* относительно корневого font-size */
-padding: 2em;                         /* относительно font-size элемента */
-height: 100dvh;                       /* dynamic viewport height (учитывает адресную строку) */
-font-size: clamp(14px, 2vw, 18px);    /* min, preferred, max */
+font-size: 1rem; /* относительно корневого font-size */
+padding: 2em; /* относительно font-size элемента */
+height: 100dvh; /* dynamic viewport height (учитывает адресную строку) */
+font-size: clamp(14px, 2vw, 18px); /* min, preferred, max */
 ```
 
 **Container queries** — стили по размеру контейнера, а не viewport:
 
 ```css
-.card-wrapper { container-type: inline-size; }
+.card-wrapper {
+  container-type: inline-size;
+}
 
 @container (min-width: 400px) {
-  .card { flex-direction: row; }
+  .card {
+    flex-direction: row;
+  }
 }
 ```
-
----
 
 ## 10. Что такое BEM, CSS Modules и CSS-in-JS?
 
@@ -385,15 +457,20 @@ font-size: clamp(14px, 2vw, 18px);    /* min, preferred, max */
 
 ```css
 /* Block — независимый компонент */
-.button { }
+.button {
+}
 
 /* Element — часть блока (двойное подчёркивание) */
-.button__icon { }
-.button__text { }
+.button__icon {
+}
+.button__text {
+}
 
 /* Modifier — вариант (двойное тире) */
-.button--primary { }
-.button--disabled { }
+.button--primary {
+}
+.button--disabled {
+}
 ```
 
 ```html
@@ -407,13 +484,17 @@ font-size: clamp(14px, 2vw, 18px);    /* min, preferred, max */
 
 ```css
 /* Button.module.css */
-.button { background: blue; }
-.primary { background: darkblue; }
+.button {
+  background: blue;
+}
+.primary {
+  background: darkblue;
+}
 ```
 
 ```jsx
-import styles from './Button.module.css';
-<button className={`${styles.button} ${styles.primary}`} />
+import styles from "./Button.module.css";
+<button className={`${styles.button} ${styles.primary}`} />;
 // → class="Button_button__x7k2q Button_primary__9mf3a"
 ```
 
@@ -421,34 +502,44 @@ import styles from './Button.module.css';
 
 ```jsx
 const Button = styled.button`
-  background: ${props => props.primary ? 'darkblue' : 'white'};
+  background: ${(props) => (props.primary ? "darkblue" : "white")};
   padding: 8px 16px;
-  &:hover { opacity: 0.8; }
+  &:hover {
+    opacity: 0.8;
+  }
 `;
 ```
 
-| | BEM | CSS Modules | CSS-in-JS |
-| --- | --- | --- | --- |
-| Изоляция | Конвенция | Автоматическая | Автоматическая |
-| Динамические стили | Нет | Ограничена | Полная (props) |
-| Runtime overhead | Нет | Нет | Да |
-| Популярность сейчас | Legacy | Стандарт в React | Снижается |
-
----
+|                     | BEM       | CSS Modules      | CSS-in-JS      |
+| ------------------- | --------- | ---------------- | -------------- |
+| Изоляция            | Конвенция | Автоматическая   | Автоматическая |
+| Динамические стили  | Нет       | Ограничена       | Полная (props) |
+| Runtime overhead    | Нет       | Нет              | Да             |
+| Популярность сейчас | Legacy    | Стандарт в React | Снижается      |
 
 ## 11. Что такое z-index и stacking context?
 
 **`z-index`** — управляет порядком наложения элементов по оси Z. Работает только на positioned элементах (`position != static`) и flex/grid-детях.
 
 ```css
-.modal   { position: fixed;    z-index: 1000; }
-.tooltip { position: absolute; z-index: 100; }
-.header  { position: sticky;   z-index: 10; }
+.modal {
+  position: fixed;
+  z-index: 1000;
+}
+.tooltip {
+  position: absolute;
+  z-index: 100;
+}
+.header {
+  position: sticky;
+  z-index: 10;
+}
 ```
 
 **Stacking context (контекст наложения)** — изолированная группа, внутри которой `z-index` работает независимо. Элементы из разных контекстов сравниваются по `z-index` их контекстов, а не их собственному.
 
 **Что создаёт stacking context:**
+
 - `position` + `z-index != auto`
 - `opacity < 1`
 - `transform`, `filter`, `will-change`

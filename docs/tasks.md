@@ -9,10 +9,12 @@
 ### 1. Объекты как ключи
 
 ```js
-const a = {}, b = {}, c = {}
-a[b] = '1'
-a[c] = '2'
-console.log(a)
+const a = {},
+  b = {},
+  c = {};
+a[b] = "1";
+a[c] = "2";
+console.log(a);
 ```
 
 <details>
@@ -26,21 +28,19 @@ console.log(a)
 
 </details>
 
----
-
 ### 2. Порядок Event Loop
 
 ```js
-console.log('1')
+console.log("1");
 
-setTimeout(() => console.log('2'), 0)
-setTimeout(() => console.log('3'), 0)
+setTimeout(() => console.log("2"), 0);
+setTimeout(() => console.log("3"), 0);
 
 Promise.resolve()
-  .then(() => console.log('4'))
-  .then(() => console.log('5'))
+  .then(() => console.log("4"))
+  .then(() => console.log("5"));
 
-console.log('6')
+console.log("6");
 ```
 
 <details>
@@ -56,22 +56,20 @@ console.log('6')
 
 </details>
 
----
-
 ### 3. Потеря `this` в колбэке
 
 ```js
 const obj = {
-  name: 'Alice',
-  friends: ['Bob', 'Charlie'],
+  name: "Alice",
+  friends: ["Bob", "Charlie"],
   printFriends() {
-    this.friends.filter(function(friend) {
-      console.log(this.name + ' → ' + friend)
-    })
-  }
-}
+    this.friends.filter(function (friend) {
+      console.log(this.name + " → " + friend);
+    });
+  },
+};
 
-obj.printFriends()
+obj.printFriends();
 ```
 
 <details>
@@ -95,15 +93,13 @@ printFriends() {
 
 </details>
 
----
-
 ### 4. typeof null
 
 ```js
-console.log(typeof null)
-console.log(typeof undefined)
-console.log(typeof [])
-console.log(typeof function(){})
+console.log(typeof null);
+console.log(typeof undefined);
+console.log(typeof []);
+console.log(typeof function () {});
 ```
 
 <details>
@@ -121,16 +117,14 @@ console.log(typeof function(){})
 
 </details>
 
----
-
 ### 5. Приведение типов с ==
 
 ```js
-console.log([] == ![])
-console.log(null == undefined)
-console.log(null == 0)
-console.log('' == false)
-console.log(0 == '0')
+console.log([] == ![]);
+console.log(null == undefined);
+console.log(null == 0);
+console.log("" == false);
+console.log(0 == "0");
 ```
 
 <details>
@@ -157,12 +151,12 @@ true   // '0' → 0
 Реализовать класс `EventEmitter` с методами `on`, `off`, `emit`. Методы `on` и `off` должны поддерживать chaining.
 
 ```js
-const emitter = new EventEmitter()
+const emitter = new EventEmitter();
 
 emitter
-  .on('data', (x) => console.log('handler 1:', x))
-  .on('data', (x) => console.log('handler 2:', x))
-  .emit('data', 42)
+  .on("data", (x) => console.log("handler 1:", x))
+  .on("data", (x) => console.log("handler 2:", x))
+  .emit("data", 42);
 // handler 1: 42
 // handler 2: 42
 ```
@@ -173,41 +167,40 @@ emitter
 ```js
 class EventEmitter {
   constructor() {
-    this._handlers = {}
+    this._handlers = {};
   }
 
   on(event, fn) {
     if (!this._handlers[event]) {
-      this._handlers[event] = []
+      this._handlers[event] = [];
     }
-    this._handlers[event].push(fn)
-    return this // chaining
+    this._handlers[event].push(fn);
+    return this; // chaining
   }
 
   off(event, fn) {
     if (this._handlers[event]) {
-      this._handlers[event] = this._handlers[event].filter(h => h !== fn)
+      this._handlers[event] = this._handlers[event].filter((h) => h !== fn);
     }
-    return this // chaining
+    return this; // chaining
   }
 
   emit(event, ...args) {
     if (this._handlers[event]) {
-      this._handlers[event].forEach(fn => fn(...args))
+      this._handlers[event].forEach((fn) => fn(...args));
     }
-    return this
+    return this;
   }
 }
 ```
 
 **Ключевые моменты:**
+
 - `return this` в каждом методе обеспечивает chaining
 - `off` сравнивает по ссылке на функцию — анонимные функции нельзя отписать
 - `emit` использует spread для передачи любого числа аргументов
 
 </details>
-
----
 
 ### 7. Debounce
 
@@ -218,36 +211,36 @@ class EventEmitter {
 
 ```js
 function debounce(fn, delay) {
-  let timer
+  let timer;
 
-  return function(...args) {
-    clearTimeout(timer)
+  return function (...args) {
+    clearTimeout(timer);
     timer = setTimeout(() => {
-      fn.apply(this, args)
-    }, delay)
-  }
+      fn.apply(this, args);
+    }, delay);
+  };
 }
 
 // Использование:
 const onSearch = debounce((query) => {
-  fetch(`/search?q=${query}`)
-}, 300)
+  fetch(`/search?q=${query}`);
+}, 300);
 
-input.addEventListener('input', (e) => onSearch(e.target.value))
+input.addEventListener("input", (e) => onSearch(e.target.value));
 ```
 
 **Ключевые моменты:**
+
 - `clearTimeout` при каждом вызове сбрасывает таймер
 - `fn.apply(this, args)` сохраняет контекст и аргументы
 - Замыкание хранит `timer` между вызовами
 
 </details>
 
----
-
 ### 8. Поиск с debounce и AbortController (SWAPI-задача)
 
 Написать React-компонент: поиск персонажей Star Wars через [https://swapi.dev](https://swapi.dev). Требования:
+
 - debounce 300 мс
 - отмена предыдущего запроса при новом (AbortController)
 - индикатор загрузки
@@ -256,69 +249,71 @@ input.addEventListener('input', (e) => onSearch(e.target.value))
 <summary>Решение</summary>
 
 ```jsx
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from "react";
 
 function useDebounce(value, delay) {
-  const [debounced, setDebounced] = useState(value)
+  const [debounced, setDebounced] = useState(value);
 
   useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delay)
-    return () => clearTimeout(timer)
-  }, [value, delay])
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
 
-  return debounced
+  return debounced;
 }
 
 function SwapiSearch() {
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const debouncedQuery = useDebounce(query, 300)
+  const debouncedQuery = useDebounce(query, 300);
 
   useEffect(() => {
     if (!debouncedQuery) {
-      setResults([])
-      return
+      setResults([]);
+      return;
     }
 
-    const controller = new AbortController()
-    setLoading(true)
-    setError(null)
+    const controller = new AbortController();
+    setLoading(true);
+    setError(null);
 
     fetch(`https://swapi.dev/api/people/?search=${debouncedQuery}`, {
       signal: controller.signal,
     })
-      .then(r => r.json())
-      .then(data => {
-        setResults(data.results)
-        setLoading(false)
+      .then((r) => r.json())
+      .then((data) => {
+        setResults(data.results);
+        setLoading(false);
       })
-      .catch(err => {
-        if (err.name !== 'AbortError') {
-          setError(err.message)
-          setLoading(false)
+      .catch((err) => {
+        if (err.name !== "AbortError") {
+          setError(err.message);
+          setLoading(false);
         }
-      })
+      });
 
-    return () => controller.abort()
-  }, [debouncedQuery])
+    return () => controller.abort();
+  }, [debouncedQuery]);
 
   return (
     <div>
       <input
         value={query}
-        onChange={e => setQuery(e.target.value)}
+        onChange={(e) => setQuery(e.target.value)}
         placeholder="Поиск персонажа..."
       />
       {loading && <p>Загрузка...</p>}
       {error && <p>Ошибка: {error}</p>}
       <ul>
-        {results.map(p => <li key={p.url}>{p.name}</li>)}
+        {results.map((p) => (
+          <li key={p.url}>{p.name}</li>
+        ))}
       </ul>
     </div>
-  )
+  );
 }
 ```
 
@@ -326,21 +321,19 @@ function SwapiSearch() {
 
 </details>
 
----
-
 ### 9. Чек-боксы с двойным кликом — найди баги
 
 В коде ниже несколько ошибок. Найдите и исправьте.
 
 ```jsx
 function CheckboxList({ items }) {
-  const [selected, setSelected] = React.useState([])
+  const [selected, setSelected] = React.useState([]);
 
   React.useEffect(() => {
-    document.addEventListener('dblclick', () => {
-      console.log('selected:', selected)
-    })
-  })
+    document.addEventListener("dblclick", () => {
+      console.log("selected:", selected);
+    });
+  });
 
   return (
     <div>
@@ -351,10 +344,10 @@ function CheckboxList({ items }) {
             id={`item-${i}`}
             disable={selected.includes(item.id)}
             onChange={() =>
-              setSelected(prev =>
+              setSelected((prev) =>
                 prev.includes(item.id)
-                  ? prev.filter(id => id !== item.id)
-                  : [...prev, item.id]
+                  ? prev.filter((id) => id !== item.id)
+                  : [...prev, item.id],
               )
             }
           />
@@ -362,7 +355,7 @@ function CheckboxList({ items }) {
         </label>
       ))}
     </div>
-  )
+  );
 }
 ```
 
@@ -373,10 +366,10 @@ function CheckboxList({ items }) {
 
 ```jsx
 useEffect(() => {
-  const handler = () => console.log('selected:', selected)
-  document.addEventListener('dblclick', handler)
-  return () => document.removeEventListener('dblclick', handler)
-}, [selected])
+  const handler = () => console.log("selected:", selected);
+  document.addEventListener("dblclick", handler);
+  return () => document.removeEventListener("dblclick", handler);
+}, [selected]);
 ```
 
 **2. `for` вместо `htmlFor`** — в JSX HTML-атрибут `for` пишется как `htmlFor`:
@@ -403,11 +396,11 @@ disabled={selected.includes(item.id)}
 
 ```ts
 for (var i = 0; i < 3; i++) {
-  setTimeout(() => console.log(i), 0)
+  setTimeout(() => console.log(i), 0);
 }
 
 for (let j = 0; j < 3; j++) {
-  setTimeout(() => console.log(j), 0)
+  setTimeout(() => console.log(j), 0);
 }
 ```
 
@@ -424,24 +417,24 @@ for (let j = 0; j < 3; j++) {
 
 ```ts
 for (var i = 0; i < 3; i++) {
-  ;(function(i: number) {
-    setTimeout(() => console.log(i), 0)
-  })(i)
+  (function (i: number) {
+    setTimeout(() => console.log(i), 0);
+  })(i);
 }
 ```
 
 </details>
 
----
-
 ### 11. Promise chaining — что выведет?
 
 ```ts
 Promise.resolve(1)
-  .then(x => x + 1)
-  .then(x => { throw new Error('oops') })
+  .then((x) => x + 1)
+  .then((x) => {
+    throw new Error("oops");
+  })
   .catch(() => 42)
-  .then(x => console.log(x))
+  .then((x) => console.log(x));
 ```
 
 <details>
@@ -458,19 +451,17 @@ Promise.resolve(1)
 
 </details>
 
----
-
 ### 12. Hoisting — что выведет?
 
 ```ts
-console.log(typeof foo)
-console.log(typeof bar)
+console.log(typeof foo);
+console.log(typeof bar);
 
-var foo = function() {}
+var foo = function () {};
 function bar() {}
 
-console.log(typeof foo)
-console.log(typeof bar)
+console.log(typeof foo);
+console.log(typeof bar);
 ```
 
 <details>
@@ -487,22 +478,20 @@ console.log(typeof bar)
 
 </details>
 
----
-
 ### 13. Прототипная цепочка — instanceof
 
 ```ts
 function A() {}
 function B() {}
 
-B.prototype = Object.create(A.prototype)
+B.prototype = Object.create(A.prototype);
 
-const b = new (B as any)()
+const b = new (B as any)();
 
-console.log(b instanceof B)
-console.log(b instanceof A)
-console.log(b instanceof Object)
-console.log(b.constructor === B)
+console.log(b instanceof B);
+console.log(b instanceof A);
+console.log(b instanceof Object);
+console.log(b.constructor === B);
 ```
 
 <details>
@@ -518,7 +507,7 @@ false  // B.prototype = Object.create(A.prototype) перезаписал constr
 `instanceof` проверяет цепочку прототипов, а не сам конструктор. При наследовании через `Object.create` свойство `constructor` теряется — нужно восстанавливать вручную:
 
 ```ts
-B.prototype.constructor = B
+B.prototype.constructor = B;
 ```
 
 </details>
@@ -532,8 +521,8 @@ B.prototype.constructor = B
 Реализовать функцию `throttle(fn, limit)` — вызывает `fn` не чаще одного раза за `limit` мс.
 
 ```ts
-const onScroll = throttle(() => console.log('scroll'), 300)
-window.addEventListener('scroll', onScroll)
+const onScroll = throttle(() => console.log("scroll"), 300);
+window.addEventListener("scroll", onScroll);
 // при быстром скролле — срабатывает максимум раз в 300 мс
 ```
 
@@ -543,40 +532,39 @@ window.addEventListener('scroll', onScroll)
 ```ts
 function throttle<T extends (...args: unknown[]) => unknown>(
   fn: T,
-  limit: number
+  limit: number,
 ): (...args: Parameters<T>) => void {
-  let lastCall = 0
+  let lastCall = 0;
 
   return function (this: unknown, ...args: Parameters<T>) {
-    const now = Date.now()
+    const now = Date.now();
     if (now - lastCall >= limit) {
-      lastCall = now
-      fn.apply(this, args)
+      lastCall = now;
+      fn.apply(this, args);
     }
-  }
+  };
 }
 ```
 
 **Ключевые моменты:**
+
 - `lastCall` хранится в замыкании между вызовами
 - В отличие от debounce — функция вызывается сразу при первом вызове, затем блокируется на `limit` мс
 - `Parameters<T>` сохраняет типы аргументов исходной функции
 
 </details>
 
----
-
 ### 15. Curry
 
 Реализовать функцию `curry(fn)` — возвращает каррированную версию функции. Поддерживает частичное применение аргументов.
 
 ```ts
-const add = (a: number, b: number, c: number) => a + b + c
+const add = (a: number, b: number, c: number) => a + b + c;
 
-const curriedAdd = curry(add)
-curriedAdd(1)(2)(3)   // 6
-curriedAdd(1, 2)(3)   // 6
-curriedAdd(1)(2, 3)   // 6
+const curriedAdd = curry(add);
+curriedAdd(1)(2)(3); // 6
+curriedAdd(1, 2)(3); // 6
+curriedAdd(1)(2, 3); // 6
 ```
 
 <details>
@@ -586,34 +574,31 @@ curriedAdd(1)(2, 3)   // 6
 function curry(fn: (...args: unknown[]) => unknown) {
   return function curried(...args: unknown[]): unknown {
     if (args.length >= fn.length) {
-      return fn(...args)
+      return fn(...args);
     }
     return function (...moreArgs: unknown[]) {
-      return curried(...args, ...moreArgs)
-    }
-  }
+      return curried(...args, ...moreArgs);
+    };
+  };
 }
 ```
 
 **Ключевые моменты:**
+
 - `fn.length` — количество параметров исходной функции
 - Если накоплено достаточно аргументов — вызываем `fn`, иначе — возвращаем новую функцию
 - Аргументы накапливаются через spread — не мутируем массив
 
 </details>
 
----
-
 ### 16. Promise.all — полифил
 
 Реализовать `promiseAll(promises)`, которая ведёт себя как `Promise.all`: резолвится когда все промисы выполнены, реджектится при первой ошибке.
 
 ```ts
-promiseAll([
-  Promise.resolve(1),
-  Promise.resolve(2),
-  Promise.resolve(3),
-]).then(console.log) // [1, 2, 3]
+promiseAll([Promise.resolve(1), Promise.resolve(2), Promise.resolve(3)]).then(
+  console.log,
+); // [1, 2, 3]
 ```
 
 <details>
@@ -622,44 +607,43 @@ promiseAll([
 ```ts
 function promiseAll<T>(promises: Promise<T>[]): Promise<T[]> {
   return new Promise((resolve, reject) => {
-    if (promises.length === 0) return resolve([])
+    if (promises.length === 0) return resolve([]);
 
-    const results: T[] = new Array(promises.length)
-    let remaining = promises.length
+    const results: T[] = new Array(promises.length);
+    let remaining = promises.length;
 
     promises.forEach((promise, i) => {
       Promise.resolve(promise)
-        .then(value => {
-          results[i] = value
-          remaining--
-          if (remaining === 0) resolve(results)
+        .then((value) => {
+          results[i] = value;
+          remaining--;
+          if (remaining === 0) resolve(results);
         })
-        .catch(reject)
-    })
-  })
+        .catch(reject);
+    });
+  });
 }
 ```
 
 **Ключевые моменты:**
+
 - `results[i] = value` — сохраняем по индексу, чтобы порядок совпадал с входным массивом (промисы могут завершиться в любом порядке)
 - `Promise.resolve(promise)` — обрабатывает случай когда элемент не является промисом
 - При первом `reject` всё отменяется — остальные промисы продолжают выполняться, но результат игнорируется
 
 </details>
 
----
-
 ### 17. pipe и compose
 
 Реализовать `pipe(f, g, h)` — применяет функции слева направо. И `compose(f, g, h)` — справа налево.
 
 ```ts
-const double = (x: number) => x * 2
-const addOne = (x: number) => x + 1
-const square = (x: number) => x * x
+const double = (x: number) => x * 2;
+const addOne = (x: number) => x + 1;
+const square = (x: number) => x * x;
 
-pipe(double, addOne, square)(3)    // 49
-compose(square, addOne, double)(3) // 49
+pipe(double, addOne, square)(3); // 49
+compose(square, addOne, double)(3); // 49
 ```
 
 <details>
@@ -667,44 +651,43 @@ compose(square, addOne, double)(3) // 49
 
 ```ts
 function pipe<T>(...fns: Array<(arg: T) => T>): (x: T) => T {
-  return (x: T) => fns.reduce((acc, fn) => fn(acc), x)
+  return (x: T) => fns.reduce((acc, fn) => fn(acc), x);
 }
 
 function compose<T>(...fns: Array<(arg: T) => T>): (x: T) => T {
-  return (x: T) => fns.reduceRight((acc, fn) => fn(acc), x)
+  return (x: T) => fns.reduceRight((acc, fn) => fn(acc), x);
 }
 ```
 
 **Ключевые моменты:**
+
 - `pipe` = `reduce` (слева направо) — читается как цепочка операций
 - `compose` = `reduceRight` (справа налево) — математическая запись `f(g(h(x)))`
 - Оба принимают любое количество функций через rest-параметры
 
 </details>
 
----
-
 ### 18. Flatten
 
 Реализовать `flatten(arr)` — рекурсивно разворачивает вложенный массив любой глубины.
 
 ```ts
-flatten([1, [2, [3, [4]], 5]]) // [1, 2, 3, 4, 5]
-flatten([1, [2, 3], [4, [5]]]) // [1, 2, 3, 4, 5]
+flatten([1, [2, [3, [4]], 5]]); // [1, 2, 3, 4, 5]
+flatten([1, [2, 3], [4, [5]]]); // [1, 2, 3, 4, 5]
 ```
 
 <details>
 <summary>Решение</summary>
 
 ```ts
-type NestedArray<T> = Array<T | NestedArray<T>>
+type NestedArray<T> = Array<T | NestedArray<T>>;
 
 function flatten<T>(arr: NestedArray<T>): T[] {
   return arr.reduce<T[]>((acc, item) => {
     return Array.isArray(item)
       ? acc.concat(flatten(item))
-      : acc.concat(item as T)
-  }, [])
+      : acc.concat(item as T);
+  }, []);
 }
 
 // Нативный (ES2019+)
@@ -712,13 +695,12 @@ function flatten<T>(arr: NestedArray<T>): T[] {
 ```
 
 **Ключевые моменты:**
+
 - Рекурсивный тип `NestedArray<T>` описывает массив произвольной вложенности
 - `Array.isArray` — единственный надёжный способ проверить массив
 - На собесе ожидают рекурсивное решение, не `flat(Infinity)`
 
 </details>
-
----
 
 ### 19. Мемоизация
 
@@ -726,13 +708,13 @@ function flatten<T>(arr: NestedArray<T>): T[] {
 
 ```ts
 const expensiveCalc = memoize((n: number) => {
-  console.log('computing...')
-  return n * n
-})
+  console.log("computing...");
+  return n * n;
+});
 
-expensiveCalc(4) // 'computing...' → 16
-expensiveCalc(4) // (из кэша) → 16
-expensiveCalc(5) // 'computing...' → 25
+expensiveCalc(4); // 'computing...' → 16
+expensiveCalc(4); // (из кэша) → 16
+expensiveCalc(5); // 'computing...' → 25
 ```
 
 <details>
@@ -740,40 +722,39 @@ expensiveCalc(5) // 'computing...' → 25
 
 ```ts
 function memoize<T extends (...args: unknown[]) => unknown>(fn: T): T {
-  const cache = new Map<string, ReturnType<T>>()
+  const cache = new Map<string, ReturnType<T>>();
 
   return function (this: unknown, ...args: Parameters<T>): ReturnType<T> {
-    const key = JSON.stringify(args)
+    const key = JSON.stringify(args);
 
     if (cache.has(key)) {
-      return cache.get(key) as ReturnType<T>
+      return cache.get(key) as ReturnType<T>;
     }
 
-    const result = fn.apply(this, args) as ReturnType<T>
-    cache.set(key, result)
-    return result
-  } as T
+    const result = fn.apply(this, args) as ReturnType<T>;
+    cache.set(key, result);
+    return result;
+  } as T;
 }
 ```
 
 **Ключевые моменты:**
+
 - `JSON.stringify(args)` — простой ключ для нескольких аргументов; не работает с функциями, `undefined`, циклическими ссылками — на собесе это нормально упомянуть
 - `Map` лучше объекта для кэша: ключи любого типа, нет коллизий с `__proto__`
 - `Parameters<T>` и `ReturnType<T>` — сохраняем типы исходной функции
 
 </details>
 
----
-
 ### 20. deepEqual
 
 Реализовать `deepEqual(a, b)` — глубокое сравнение двух значений.
 
 ```ts
-deepEqual({ a: 1, b: { c: 2 } }, { a: 1, b: { c: 2 } }) // true
-deepEqual([1, [2, 3]], [1, [2, 3]])                       // true
-deepEqual({ a: 1 }, { a: 2 })                            // false
-deepEqual(null, null)                                     // true
+deepEqual({ a: 1, b: { c: 2 } }, { a: 1, b: { c: 2 } }); // true
+deepEqual([1, [2, 3]], [1, [2, 3]]); // true
+deepEqual({ a: 1 }, { a: 2 }); // false
+deepEqual(null, null); // true
 ```
 
 <details>
@@ -781,29 +762,33 @@ deepEqual(null, null)                                     // true
 
 ```ts
 function deepEqual(a: unknown, b: unknown): boolean {
-  if (a === b) return true
+  if (a === b) return true;
 
-  if (a === null || b === null) return false
-  if (typeof a !== 'object' || typeof b !== 'object') return false
+  if (a === null || b === null) return false;
+  if (typeof a !== "object" || typeof b !== "object") return false;
 
-  const keysA = Object.keys(a as object)
-  const keysB = Object.keys(b as object)
+  const keysA = Object.keys(a as object);
+  const keysB = Object.keys(b as object);
 
-  if (keysA.length !== keysB.length) return false
+  if (keysA.length !== keysB.length) return false;
 
   for (const key of keysA) {
-    if (!Object.prototype.hasOwnProperty.call(b, key)) return false
-    if (!deepEqual(
-      (a as Record<string, unknown>)[key],
-      (b as Record<string, unknown>)[key]
-    )) return false
+    if (!Object.prototype.hasOwnProperty.call(b, key)) return false;
+    if (
+      !deepEqual(
+        (a as Record<string, unknown>)[key],
+        (b as Record<string, unknown>)[key],
+      )
+    )
+      return false;
   }
 
-  return true
+  return true;
 }
 ```
 
 **Ключевые моменты:**
+
 - `a === b` — покрывает примитивы и одинаковые ссылки на объекты
 - `typeof null === 'object'` — нужна отдельная проверка на `null`
 - `unknown` вместо `any` — безопаснее, заставляет сужать тип перед использованием
@@ -819,23 +804,25 @@ function deepEqual(a: unknown, b: unknown): boolean {
 Компонент `List` тормозит. Найдите проблему и исправьте.
 
 ```tsx
-const ThemeContext = createContext<{ theme: string; lang: string } | null>(null)
+const ThemeContext = createContext<{ theme: string; lang: string } | null>(
+  null,
+);
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState(0);
 
   return (
-    <ThemeContext.Provider value={{ theme: 'dark', lang: 'ru' }}>
-      <button onClick={() => setCount(c => c + 1)}>{count}</button>
+    <ThemeContext.Provider value={{ theme: "dark", lang: "ru" }}>
+      <button onClick={() => setCount((c) => c + 1)}>{count}</button>
       <List />
     </ThemeContext.Provider>
-  )
+  );
 }
 
 const List = React.memo(() => {
-  const ctx = useContext(ThemeContext)
-  return <div>{ctx?.theme}</div>
-})
+  const ctx = useContext(ThemeContext);
+  return <div>{ctx?.theme}</div>;
+});
 ```
 
 <details>
@@ -847,15 +834,15 @@ const List = React.memo(() => {
 
 ```tsx
 function App() {
-  const [count, setCount] = useState(0)
-  const theme = useMemo(() => ({ theme: 'dark', lang: 'ru' }), [])
+  const [count, setCount] = useState(0);
+  const theme = useMemo(() => ({ theme: "dark", lang: "ru" }), []);
 
   return (
     <ThemeContext.Provider value={theme}>
-      <button onClick={() => setCount(c => c + 1)}>{count}</button>
+      <button onClick={() => setCount((c) => c + 1)}>{count}</button>
       <List />
     </ThemeContext.Provider>
-  )
+  );
 }
 ```
 
@@ -863,18 +850,20 @@ function App() {
 
 </details>
 
----
-
 ### 22. Реализовать usePrevious
 
 Реализовать хук `usePrevious<T>(value: T)` — возвращает предыдущее значение переменной.
 
 ```tsx
 function Counter() {
-  const [count, setCount] = useState(0)
-  const prev = usePrevious(count)
+  const [count, setCount] = useState(0);
+  const prev = usePrevious(count);
 
-  return <p>Сейчас: {count}, до: {prev}</p>
+  return (
+    <p>
+      Сейчас: {count}, до: {prev}
+    </p>
+  );
 }
 ```
 
@@ -883,24 +872,23 @@ function Counter() {
 
 ```ts
 function usePrevious<T>(value: T): T | undefined {
-  const ref = useRef<T>()
+  const ref = useRef<T>();
 
   useEffect(() => {
-    ref.current = value
-  }) // без зависимостей — запускается после каждого рендера
+    ref.current = value;
+  }); // без зависимостей — запускается после каждого рендера
 
-  return ref.current
+  return ref.current;
 }
 ```
 
 **Ключевые моменты:**
+
 - `useRef` хранит значение между рендерами без вызова перерендера
 - `useEffect` без зависимостей запускается **после** рендера — `ref.current` обновляется уже когда компонент отрисовался
 - Поэтому во время текущего рендера `ref.current` ещё содержит предыдущее значение — именно это нам нужно
 
 </details>
-
----
 
 ### 23. Реализовать useWindowSize
 
@@ -908,8 +896,12 @@ function usePrevious<T>(value: T): T | undefined {
 
 ```tsx
 function Component() {
-  const { width, height } = useWindowSize()
-  return <p>{width} x {height}</p>
+  const { width, height } = useWindowSize();
+  return (
+    <p>
+      {width} x {height}
+    </p>
+  );
 }
 ```
 
@@ -918,33 +910,34 @@ function Component() {
 
 ```ts
 interface WindowSize {
-  width: number
-  height: number
+  width: number;
+  height: number;
 }
 
 function useWindowSize(): WindowSize {
   const [size, setSize] = useState<WindowSize>({
     width: window.innerWidth,
     height: window.innerHeight,
-  })
+  });
 
   useEffect(() => {
     const handler = () => {
       setSize({
         width: window.innerWidth,
         height: window.innerHeight,
-      })
-    }
+      });
+    };
 
-    window.addEventListener('resize', handler)
-    return () => window.removeEventListener('resize', handler)
-  }, [])
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
-  return size
+  return size;
 }
 ```
 
 **Ключевые моменты:**
+
 - `[]` — подписываемся один раз при монтировании
 - Функция очистки убирает listener при размонтировании — иначе утечка памяти
 - На собесе могут попросить добавить debounce к `handler` — resize стреляет очень часто
@@ -959,15 +952,15 @@ function useWindowSize(): WindowSize {
 
 ```tsx
 function UserProfile({ userId }: { userId: number }) {
-  const [user, setUser] = useState<{ name: string } | null>(null)
+  const [user, setUser] = useState<{ name: string } | null>(null);
 
   useEffect(() => {
     fetch(`/api/users/${userId}`)
-      .then(r => r.json())
-      .then(data => setUser(data))
-  }, [userId])
+      .then((r) => r.json())
+      .then((data) => setUser(data));
+  }, [userId]);
 
-  return <div>{user?.name}</div>
+  return <div>{user?.name}</div>;
 }
 ```
 
@@ -980,39 +973,37 @@ function UserProfile({ userId }: { userId: number }) {
 
 ```tsx
 useEffect(() => {
-  const controller = new AbortController()
+  const controller = new AbortController();
 
   fetch(`/api/users/${userId}`, { signal: controller.signal })
-    .then(r => r.json())
+    .then((r) => r.json())
     .then((data: { name: string }) => setUser(data))
     .catch((err: Error) => {
-      if (err.name !== 'AbortError') throw err
-    })
+      if (err.name !== "AbortError") throw err;
+    });
 
-  return () => controller.abort()
-}, [userId])
+  return () => controller.abort();
+}, [userId]);
 ```
 
 При смене `userId` React вызывает cleanup — предыдущий запрос отменяется, и его результат не попадёт в state.
 
 </details>
 
----
-
 ### 25. Stale closure в setInterval
 
 ```tsx
 function Timer() {
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState(0);
 
   useEffect(() => {
     const id = setInterval(() => {
-      setCount(count + 1)
-    }, 1000)
-    return () => clearInterval(id)
-  }, [])
+      setCount(count + 1);
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
 
-  return <p>{count}</p>
+  return <p>{count}</p>;
 }
 ```
 
@@ -1026,10 +1017,10 @@ function Timer() {
 ```tsx
 useEffect(() => {
   const id = setInterval(() => {
-    setCount(c => c + 1) // c — всегда актуальное значение из очереди React
-  }, 1000)
-  return () => clearInterval(id)
-}, [])
+    setCount((c) => c + 1); // c — всегда актуальное значение из очереди React
+  }, 1000);
+  return () => clearInterval(id);
+}, []);
 ```
 
 Функциональная форма `setState` не замыкает конкретное значение — React передаёт актуальный state в момент применения обновления.
